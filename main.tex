@@ -9,6 +9,67 @@
 
 \maketitle
 
-\section{Introduction}
+\section{Introduction and Motivation}
+\subsection{Context: Biological Interpretation as Mechanistic Discovery}
+\begin{itemize}
+    \item Biological interpretation involves the development/discovery of mechanistic relationships between biological entities such as genes, proteins, RNA, and other molecular components 
+
+    \item It is essential for discovering context-specific relationships and developing models of disease, phenotypes, pathways, and regulatory systems
+
+    \item In recent years, ML/AI-based methods such as iRF, MENTOR, and related approaches have accelerated biological interpretation through the construction of biologically informed networks, which scientists explore to generate mechanistic and functional hypotheses.
+
+    \item As these methods increase the resolution and scope of inferred networks, biological interpretation has become increasingly mediated by large, densely connected, multi-scale graph structures.
+\end{itemize}
+
+\subsection{Problem: Biological Interpretation is Bottlenecked by Human Cognitive Scale}
+\begin{itemize}
+    \item Although ML/AI methods have refined mechanistic focus into groups of functionally related clades of genes, these clades can still be massive and intractable for individual researchers to systematically explore.
+
+    \item Additionally, most research emphasizes a deep-but-narrow focus on a small subset of functionally related genes, which can overlook broader yet biologically meaningful network context, particularly in highly interactive systems such as living organisms
+
+    \item As biological networks grow in size and complexity, the combinatorial space of possible multi-hop interactions expands rapidly, while human interpretive capacity remains fixed.
+
+    \item This mismatch creates a scaling limit in biological mechanistic interpretation: although computational methods can generate increasingly rich relational structures, the downstream synthesis of mechanistic hypotheses remains constrained by human bandwidth, attention, and cognitive integration capacity.
+
+    \item consequently, the speed, breadth, and contextual depth of mechanistic discovery are limited, particularly for complex traits, polygenic diseases, and multi-layer regulatory systems.
+\end{itemize}
+
+\subsection{Resolution: AI-Guided Reasoning to Extend Mechanistic Interpretation Beyond Human Scale}
+\begin{itemize}
+    \item AI models, particularly LLMs, present an opportunity to aid scientists in mechanistic discovery tasks
+
+    \item LLMs excel at processing and synthesizing large volumes of information, complementing the deep domain expertise and focused inquiry of human researchers
+
+    \item recent developments in agent-based systems enable models to invoke deterministic tools, allowing structured interaction with network-based representations and substantially reducing hallucination
+
+    \item we propose \textbf{MENTOR-RL} a reasoning-based model for structured network exploration and mechanistic discovery designed explicity to address the scaling limits of biological interpretation
+
+    \item by training transformer-based agents with reinforcement learning across a diverse set of tool-use tasks and contextual levels of biological network data, we aim to produce a model that can collaborate with researchers to traverse complex networks, synthesize \textit{multi-hop} mechanistic hypotheses, and integrate both local functional structure and global topological context
+
+    \item Rather than replacing scientific judgment, MENTOR-RL is intended to extend the effective interpretive bandwidth of researchers, enabling broader, faster, and more context-aware mechanistic discovery.
+
+    
+\end{itemize}
+
+\section{Background and Related Work}
+\subsection{Biological Interpretation}
+\begin{itemize}
+    \item 
+\end{itemize}
+
+\subsection{Large Language Models}
+
+\subsection{Deep Reinforcement Learning}
+
+\section{Proposed Methodology}
+\subsection{Dataset Construction and Computation}
+
+\subsection{}
+
+\section{Expected Results and Contributions}
+\subsection{}
+
+\section{Discussion}
+\subsection{}
 
 \end{document}
