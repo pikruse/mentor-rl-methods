@@ -1,9 +1,12 @@
-\documentclass{article}
+\documentclass[thesis,letterpaper,12pt]{utthesis}
 \usepackage{graphicx} % Required for inserting images
+\usepackage{biblatex}
 
 \title{MENTOR-RL Methods}
 \author{Peter Kruse}
 \date{September 2025}
+
+\addbibresource{references.bib}
 
 \begin{document}
 
@@ -52,24 +55,195 @@
 \end{itemize}
 
 \section{Background and Related Work}
-\subsection{Biological Interpretation}
+\subsection{Biological Network-Based Interpretation}
+Establishes what interpretation is, how networks became central, and where current methods stop
 \begin{itemize}
-    \item 
+    \item Mechanistic discovery in systems biology
+    \begin{itemize}
+        \item \cite{barabasi2004network}
+        \item \cite{ideker2012differential}
+        \item \cite{barabasi2011network}
+    \end{itemize}
+
+    \item iRF and iRF-LOOP
+    \begin{itemize}
+        \item \cite{basu2018iterative}
+        \item \cite{cliff2019high}
+    \end{itemize}
+
+    \item MENTOR
+    \begin{itemize}
+        \item MENTOR
+    \end{itemize}
+
+    \item Network propagation and diffusion methods (RWR)
+    \begin{itemize}
+        \item \cite{kohler2008walking} 
+        \item \cite{vanunu2010associating}
+        \item \cite{tong2006fast}
+        \item \cite{cowen2017network}
+    \end{itemize}
+
+    \item community detection and subgraph extraction
+    \begin{itemize}
+        \item \cite{newman2004finding}
+        \item \cite{blondel2008fast}
+        \item \cite{fortunato2010community}
+    \end{itemize}
+
+    \item graph neural networks in biological modeling
+    \begin{itemize}
+        \item \cite{kipf2016semi}
+        \item \cite{hamilton2017inductive}
+        \item \cite{velivckovic2017graph}
+    \end{itemize}
 \end{itemize}
 
-\subsection{Large Language Models}
+\subsection{Transformer-Based Structured Reasoning}
+Showing the evolution from language modeling -> tool use -> agent systems -> structured reasoning
+\begin{itemize}
+    \item transformer architectures and scaling
+    \begin{itemize}
+        \item \cite{vaswani2017attention}
+        \item \cite{brown2020language}
+        \item \cite{kaplan2020scaling}
+        \item \cite{hoffmann2022training}
+    \end{itemize}
+    
+    \item emergent reasoning in transformers
+    \begin{itemize}
+        \item \cite{wei2022chain}
+        \item \cite{kojima2022large}
+        \item \cite{wang2022self}
+    \end{itemize}
 
-\subsection{Deep Reinforcement Learning}
+    \item tool-augmented LMs (ReAct, ToolFormer)
+    \begin{itemize}
+        \item \cite{schick2023toolformer}
+        \item \cite{yao2022react}
+        \item \cite{gao2023pal}
+        \item \cite{patil2024gorilla}
+    \end{itemize}
+
+    \item Retrieval-augmented and graph-augmented models (RAG, GraphRAG)
+    \begin{itemize}
+        \item 
+    \end{itemize}
+    
+    \item limitations of LLMs in long-horizon structured reasoning
+    \begin{itemize}
+        \item
+    \end{itemize}
+\end{itemize}
+
+\subsection{Reinforcement Learning for Sequential Decision-Making}
+formalize the graph exploration problem as sequential decision-making
+\begin{itemize}
+    \item Policy gradient methods (PPO)
+    \begin{itemize}
+        \item
+    \end{itemize}
+
+    \item RL for language models (RLHF, GRPO, DPO)
+    \begin{itemize}
+        \item
+    \end{itemize}
+
+    \item RL for tool-use and planning agents
+    \begin{itemize}
+        \item
+    \end{itemize}
+
+    \item RL in graph and combinatorial environments
+    \begin{itemize}
+        \item
+    \end{itemize}
+\end{itemize}
 
 \section{Proposed Methodology}
-\subsection{Dataset Construction and Computation}
+\subsection{Agent Loop Formulation}
+\begin{itemize}
+    \item Formalize the graph exploration task as an iterative agent loop, with query/hypothesis generation being defined at discrete decision points
 
-\subsection{}
+    \item Working model updates
+    \begin{enumerate}
+        \item propose a hypothesis
+        \item select a graph query (or queries)
+        \item interpret returned results
+        \item update working model
+    \end{enumerate}
+
+    \item each decision is an evaluable action within a sequential decision-making and refinement process
+\end{itemize}
+
+\subsection{Training Framework}
+\begin{itemize}
+    \item \textbf{DO NOT USE FRONTIER MODELS}
+    \item Utilize high-quality expert rollouts to construct structured preference datasets over intermediate reasoning steps 
+
+    \item training pipeline:
+    \begin{enumerate}
+        \item collect rollout traces from a frontier-model based agent interacting with the graph environment through a combination of SQL database queries and NetworkX (or PyG) graph exploration functions
+        
+        \item extract intermediate decision points
+
+        \item condition a smaller open-source model on the trace context
+
+        \item sample multiple candidate next-step actions
+
+        \item use an expert judge (GPT-5 or other model) to rank candidates
+
+        \item construct preference pairs
+
+        \item optimize with DPO
+    \end{enumerate}
+
+    \item DPO operates off-policy, so it doesn't need to produce its own trace. Follows a teacher-student paradigm
+\end{itemize}
+
+\subsection{Curriculum and Optimization Strategy}
+\begin{itemize}
+    \item we need to mitigate the distribution mismatch between expert-generated context and student-generated context during deployment. We will do so with a curriculum to incorporate student-generated context
+
+    \item curriculum: scale from "gold-standard gene sets" to more novel biology
+    
+    
+    \item we can supplement the curriculum with human-edited context to push the model more toward the "expert distribution" as we begin using this in production. Can use either PPO or DPO for this
+
+    \item progessively reduces the covariate shift between training and deployment context distributions 
+\end{itemize}
+
+\subsection{Reward Decomposition}
+\begin{itemize}
+    \item we divide the reward structure between the query (partially verifiable), the hypothesis (subjective), and interpretation (soft judgement)
+
+    \item query: syntactic validity, execution success
+
+    \item hypothesis formation: expert-model judgement
+
+    \item interpretation: expert-model judgement
+\end{itemize}
+
+\subsection{Verbalized Sampling and Diversity}
+\begin{itemize}
+    \item generate multiple, varied answers, alongside explicit probability scores to discourage producing "safe" answers
+
+    \item can be incorporated simply with the rest of the RL pipeline 
+\end{itemize}
 
 \section{Expected Results and Contributions}
+
 \subsection{}
 
 \section{Discussion}
 \subsection{}
+
+\section{Notes}
+\begin{itemize}
+    \item we want a curriculum from simplicity "niceness" to complexity "chaos" move from easy to hard
+    \item start with gold standard complexes and scale within them and across them
+\end{itemize}
+
+\printbibliography
 
 \end{document}
