@@ -22,9 +22,11 @@
     \item In recent years, ML/AI-based methods such as iRF, MENTOR, and related approaches have accelerated biological interpretation through the construction of biologically informed networks, which scientists explore to generate mechanistic and functional hypotheses.
 
     \item As these methods increase the resolution and scope of inferred networks, biological interpretation has become increasingly mediated by large, densely connected, multi-scale graph structures.
+
+    \item As biological networks and supporting databases grow, mechanistic exploration requires many iterative queries and multi-step reasoning.
 \end{itemize}
 
-\subsection{Problem: Biological Interpretation is Bottlenecked by Human Cognitive Scale}
+\subsection{Problem: Biological Interpretation is Bottlenecked by Scale, both in Human Cognition and Frontier Model Cost}
 \begin{itemize}
     \item Although ML/AI methods have refined mechanistic focus into groups of functionally related clades of genes, these clades can still be massive and intractable for individual researchers to systematically explore.
 
@@ -32,22 +34,26 @@
 
     \item As biological networks grow in size and complexity, the combinatorial space of possible multi-hop interactions expands rapidly, while human interpretive capacity remains fixed.
 
-    \item This mismatch creates a scaling limit in biological mechanistic interpretation: although computational methods can generate increasingly rich relational structures, the downstream synthesis of mechanistic hypotheses remains constrained by human bandwidth, attention, and cognitive integration capacity.
+    \item While Large Language Models (LLMs) excel at processing and synthesizing large volumes of information, frontier inference cost scales with exploration length and reasoning depth, limiting agentic deployment scenarios.
+
+    \item This mismatch creates a scaling limit in biological mechanistic interpretation: although computational methods can generate increasingly rich relational structures, the downstream synthesis of mechanistic hypotheses remains constrained by human bandwidth, and large language model cost.
 
     \item consequently, the speed, breadth, and contextual depth of mechanistic discovery are limited, particularly for complex traits, polygenic diseases, and multi-layer regulatory systems.
 \end{itemize}
 
 \subsection{Resolution: AI-Guided Reasoning to Extend Mechanistic Interpretation Beyond Human Scale}
 \begin{itemize}
-    \item AI models, particularly LLMs, present an opportunity to aid scientists in mechanistic discovery tasks
+    \item Open-source LLMs present an opportunity to aid scientists in mechanistic discovery tasks without being cost prohibitive.
 
-    \item LLMs excel at processing and synthesizing large volumes of information, complementing the deep domain expertise and focused inquiry of human researchers
+    \item LLMs excel at processing and synthesizing large volumes of information, complementing the deep domain expertise and focused inquiry of human researchers.
 
-    \item recent developments in agent-based systems enable models to invoke deterministic tools, allowing structured interaction with network-based representations and substantially reducing hallucination
+    \item recent developments in agent-based systems enable models to invoke deterministic tools, allowing structured interaction with network-based representations and substantially reducing hallucination. Further more, open-source releases allow users to train models to excel at specific tasks while being free to use, besides computational cost.
+    
+    \item we propose \textbf{MENTOR-RL}, a reasoning agent trained on human-annotated biological ground truth and verifiable interaction objective, enabling scalable mechanistic exploration without a reliance on proprietary models.
 
-    \item we propose \textbf{MENTOR-RL} a reasoning-based model for structured network exploration and mechanistic discovery designed explicity to address the scaling limits of biological interpretation
+    \item by training a transformer-based agent with reinforcement learning across a diverse set of tool-use tasks and contextual levels of biological network data, we aim to produce a model that can collaborate with researchers to traverse complex networks, synthesize \textit{multi-hop} mechanistic hypotheses, and integrate both local functional structure and global topological context.
 
-    \item by training transformer-based agents with reinforcement learning across a diverse set of tool-use tasks and contextual levels of biological network data, we aim to produce a model that can collaborate with researchers to traverse complex networks, synthesize \textit{multi-hop} mechanistic hypotheses, and integrate both local functional structure and global topological context
+    \item Leveraging open-source model offerings allows us to deliver a model that can be deployed locally, with training cost amortized across many exploration sessions.
 
     \item Rather than replacing scientific judgment, MENTOR-RL is intended to extend the effective interpretive bandwidth of researchers, enabling broader, faster, and more context-aware mechanistic discovery.
 
@@ -58,6 +64,12 @@
 \subsection{Biological Network-Based Interpretation}
 Establishes what interpretation is, how networks became central, and where current methods stop
 \begin{itemize}
+    \item Protein complexes as mechanistic ground truth
+    \begin{itemize}
+        \item CORUM: a benchmark set for mammalian protein complexes \cite{tsitsiridis2023corum}
+        \item licensing constraints, split strategy
+    \end{itemize}
+    
     \item Mechanistic discovery in systems biology
     \begin{itemize}
         \item \cite{barabasi2004network}
@@ -173,75 +185,143 @@ formalize the graph exploration problem as sequential decision-making
         \item update working model
     \end{enumerate}
 
+    \item model structured state: alongside the working hypothesis, used for verifiable rewards
+    \begin{enumerate}
+        \item current seed set
+        \item candidate protein set
+        \item evidence edges / provenance
+        \item predicted complex id
+        \item stop / continue decision
+    \end{enumerate}
+
     \item each decision is an evaluable action within a sequential decision-making and refinement process
+\end{itemize}
+
+\subsection{Data, Resources, and Environment}
+\begin{itemize}
+    \item CORUM-grounded training corpus
+    \begin{itemize}
+       \item sample a CORUM complex $C$ 
+       \item given $k$ seed proteins from $C$, predict the complex, or none
+       \item negative examples: distinguish a true complex from a size-matched random set (similar to mentor-EV) 
+       \item rewards are computed from real human-annotated labels
+    \end{itemize}
+
+    \item Graph environment
+    \begin{itemize}
+        \item local graph database, accessed via SQL queries and graph functions (neighbors, shortest path, random walk, subgraph extraction, LOE)
+    \end{itemize}
 \end{itemize}
 
 \subsection{Training Framework}
 \begin{itemize}
-    \item \textbf{DO NOT USE FRONTIER MODELS}
-    \item Utilize high-quality expert rollouts to construct structured preference datasets over intermediate reasoning steps 
+    \item implement two training modes
 
-    \item training pipeline:
-    \begin{enumerate}
-        \item collect rollout traces from a frontier-model based agent interacting with the graph environment through a combination of SQL database queries and NetworkX (or PyG) graph exploration functions
-        
-        \item extract intermediate decision points
+    \item 1: preference optimization with CORUM labels
+    \begin{itemize}
+        \item context $x$: full trajectory
+        \item candidates ${y_i}$: next-step proposals $\rightarrow$ query, update, and hypothesis
+        \item score each candidate via deterministic metrics \ref{sec:rewards}
+        \item construct preference pairs: best vs. worst output or pairwise ranking
+        \item optimize with DPO 
+    \end{itemize}
 
-        \item condition a smaller open-source model on the trace context
+    \item 2: On-policy RL (PPO/GRPO) once rollouts are coherent
+    \begin{itemize}
+        \item full episodes with model controlling actions
+        \item optimize policy directly
+    \end{itemize}
 
-        \item sample multiple candidate next-step actions
+    \item DPO improves model coherence in early stages
+    \item PPO/GRPO expand to long horizons
 
-        \item use an expert judge (GPT-5 or other model) to rank candidates
+\end{itemize}
 
-        \item construct preference pairs
+\subsection{Reward Design and Decomposition}\label{sec:rewards}
+\begin{itemize}
+    \item query validity, tool discipline (dense + cheap rewards)
+    \begin{itemize}
+        \item positive: tool call is syntactically valid, executes
+        \item positive: returned results are non-empty, properly formatted
+        \item negative: per tool call to encourage efficiency???
+        \item negative: penalty for repeated invalid queries/loops
+    \end{itemize}
 
-        \item optimize with DPO
-    \end{enumerate}
+    \item complex recovery reward (mechanistic ground truth)
+    \begin{itemize}
+        \item define $C$ as the ground-truth corum complex, $\hat{C}$ as the model-predicted complex
+        \item use set-based metrics: F1, jaccard overlap, precision@k, recall@k
+        \item dense shaping: positive reward when model adds a correct, unseen member of a complex, penalize when an incorrect protein is added
+    \end{itemize}
 
-    \item DPO operates off-policy, so it doesn't need to produce its own trace. Follows a teacher-student paradigm
+    \item topological/contextual rewards
+    \begin{itemize}
+        \item positively reward coverage of multiple neighborhooods
+        \item penalize revisits / redundant expansion
+    \end{itemize}
 \end{itemize}
 
 \subsection{Curriculum and Optimization Strategy}
 \begin{itemize}
-    \item we need to mitigate the distribution mismatch between expert-generated context and student-generated context during deployment. We will do so with a curriculum to incorporate student-generated context
+    \item 1: intra-complex tasks (easy, dense rewards)
+    \begin{itemize}
+        \item complex completion from 1-3 seeds
+        \item short horizon, high reward density
+    \end{itemize}
 
-    \item curriculum: scale from "gold-standard gene sets" to more novel biology
-    
-    
-    \item we can supplement the curriculum with human-edited context to push the model more toward the "expert distribution" as we begin using this in production. Can use either PPO or DPO for this
+    \item 2: harder intra-complex, decoys
+    \begin{itemize}
+        \item degree-matched random negatives 
+        \item partial complexes with missing edges / noisy graphs
+    \end{itemize}
 
-    \item progessively reduces the covariate shift between training and deployment context distributions 
-\end{itemize}
-
-\subsection{Reward Decomposition}
-\begin{itemize}
-    \item we divide the reward structure between the query (partially verifiable), the hypothesis (subjective), and interpretation (soft judgement)
-
-    \item query: syntactic validity, execution success
-
-    \item hypothesis formation: expert-model judgement
-
-    \item interpretation: expert-model judgement
+    \item 3: inter-complex reasoning
+    \begin{itemize}
+        \item two complexes connected by shared pathways/functional linkage
+        \item requires exploration outside of local topology, encourages RWR usage
+        \item can measure correct complex separation
+    \end{itemize}
 \end{itemize}
 
 \subsection{Verbalized Sampling and Diversity}
 \begin{itemize}
-    \item generate multiple, varied answers, alongside explicit probability scores to discourage producing "safe" answers
-
-    \item can be incorporated simply with the rest of the RL pipeline 
+    \item use verbalized sampling to produce diverse candidate actions
+    \item CORUM-scored ranking to choose preference pairs
+    \item prevents mode collapse
 \end{itemize}
 
 \section{Expected Results and Contributions}
 
-\subsection{}
+\subsection{Expected results}
+\begin{itemize}
+    \item higher complex recovery on held-out CORUM complexes vs
+    \begin{itemize}
+        \item heuristic baselines (RWR, propagation, centrality)
+        \item untrained tool-harness baseline (same base LLM, no RL)
+    \end{itemize}
+    \item lower tool call count per successful recovery (efficiency)
+    \item better robustness to graph noise / dropped out edges
+\end{itemize}
+
+\subsection{Contributions}
+\begin{itemize}
+    \item a benchmarkable mechanistic exploration environment grounded in CORUM
+    \item training pipeline for tool-use agents for , driven by deterministic feedback 
+    \item empirical demonstration that smaller models can achieve strong mechanistic exploration performance with lower inference cost than frontier models
+\end{itemize}
 
 \section{Discussion}
-\subsection{}
-
-\section{Notes}
+\subsection{CORUM licensing}
 \begin{itemize}
-    \item we want a curriculum from simplicity "niceness" to complexity "chaos" move from easy to hard
-    \item start with gold standard complexes and scale within them and across them
+    \item compliance with corum licensing/attribution
+    \item work for research/academic purposes
+\end{itemize}
+
+\subsection{No expert judge modeling}
+\begin{itemize}
+    \item no dependence on proprietary models
+    \item improves reproducibility
+    \item ensures learned policy is driven by human annotation, not preference artifacts = more robust
 \end{itemize}
 
 \printbibliography
