@@ -45,8 +45,6 @@
 \begin{itemize}
     \item Open-source LLMs present an opportunity to aid scientists in mechanistic discovery tasks without being cost prohibitive.
 
-    \item LLMs excel at processing and synthesizing large volumes of information, complementing the deep domain expertise and focused inquiry of human researchers.
-
     \item recent developments in agent-based systems enable models to invoke deterministic tools, allowing structured interaction with network-based representations and substantially reducing hallucination. Further more, open-source releases allow users to train models to excel at specific tasks while being free to use, besides computational cost.
     
     \item we propose \textbf{MENTOR-RL}, a reasoning agent trained on human-annotated biological ground truth and verifiable interaction objective, enabling scalable mechanistic exploration without a reliance on proprietary models.
@@ -194,37 +192,126 @@ formalize the graph exploration problem as sequential decision-making
         \item stop / continue decision
     \end{enumerate}
 
+    \item Model actions are emitted in a machine-parsable schema (JSON):
+    \begin{itemize}
+        \item tool call
+        \item proposed state update
+        \item mechanistic labels
+        \item short finding statement
+        \item stop/continue
+    \end{itemize}
+
     \item each decision is an evaluable action within a sequential decision-making and refinement process
+\end{itemize}
+
+\subsection{Task Outputs and Mechanistic Targets}
+\begin{itemize}
+    \item The agent optimizes three outputs:
+    \begin{enumerate}
+        \item Complex membership prediction $\hat{C}$
+        
+        \item Mechanistic labels $\hat{y}_{\text{mech}}$: localization, functional category, and signature terms
+        
+        \item Evidence-grounded mechanistic summary
+    \end{enumerate}
+    
+    \item Mechanistic ground truth $y_{\text{text}}$ is derived from CORUM curated annotations: function, localization, and signature terms
 \end{itemize}
 
 \subsection{Data, Resources, and Environment}
 \begin{itemize}
+    \item Agent-Based training corpus
+    \begin{itemize}
+        \item 
+    \end{itemize}
+    
     \item CORUM-grounded training corpus
     \begin{itemize}
        \item sample a CORUM complex $C$ 
        \item given $k$ seed proteins from $C$, predict the complex, or none
        \item negative examples: distinguish a true complex from a size-matched random set (similar to mentor-EV) 
        \item rewards are computed from real human-annotated labels
+       \item CORUM provides curated annotations beyond membership (function, localization, references) which are used as mechanistic ground truth
+       \item construct a per-complex mechanistic target record: $\{C, \text{function\_text}, \text{localization}, \text{functional\_category}, \text{references}\}$
     \end{itemize}
 
     \item Graph environment
     \begin{itemize}
         \item local graph database, accessed via SQL queries and graph functions (neighbors, shortest path, random walk, subgraph extraction, LOE)
+        \item interpretation/annotation tools, much like what the agents use (protein descriptions, GO/pathway membership, cellular component/localization)
+    \end{itemize}
+
+
+\end{itemize}
+
+\subsection{Mechanistic Summary Dataset}
+\begin{itemize}
+    \item Mechanistic Summary Dataset
+    \begin{itemize}
+        \item goal: produce training episodes that connect tool use $\rightarrow$ evidence $\rightarrow$ mechanistic findings $\rightarrow$ summary
+        
+        \item for each CORUM complex, generate exploration tasks (complex completion) and log a tool-call trajectory (actions + observations)
+        
+        \item generate the working hypothesis statement for the next iteration, summarizing what was learned \textbf{initally template this from tool outputs functionally as a starting point}
+        
+        \item final target output:
+        \begin{enumerate}
+            \item predicted complex members $\hat{C}$
+            \item mechanistic labels (localization, functional category, signature terms)
+            \item human-readable mechanistic summary trained against CORUM curated annotations
+        \end{enumerate}
     \end{itemize}
 \end{itemize}
 
 \subsection{Training Framework}
 \begin{itemize}
-    \item implement two training modes
+
+    \item Tool call/ format SFT for proper tool calling
+
+    \item Agent-Derived SFT for gene info/world-knowledge
+
+    \item evidence $\rightarrow$ interpretation SFT
+    \begin{itemize}
+        \item input: tool observations + structured state
+        \item target: mechanistic label prediction, short mechanistic finding/summary
+    \end{itemize}
+    
+    \item implement two RL training modes
 
     \item 1: preference optimization with CORUM labels
     \begin{itemize}
         \item context $x$: full trajectory
         \item candidates ${y_i}$: next-step proposals $\rightarrow$ query, update, and hypothesis
         \item score each candidate via deterministic metrics \ref{sec:rewards}
-        \item construct preference pairs: best vs. worst output or pairwise ranking
+        \item construct preference pairs: best vs. worst output or pairwise ranking, producing a dataset of $\{prompt, chosen, rejected\}$.
+        \item TRL DPOTrainer supports tool-calling datasets with tool calls, tool responses, and a tools call with schemas
         \item optimize with DPO 
     \end{itemize}
+
+    \item 1.1: DPO training loop
+    \begin{itemize}
+        \item at decision point $t$, we have target complex proteins $C$, current structured state $s_t$, and current prompt/working model $x_t$
+
+        \item sample $N$ candidates from the base model/SFT checkpoint: $$ y_1, ..., y_N = \text{sample}(\pi_{\theta}(\cdot | x_t))$$
+
+        \item score tool validity and formatting:
+        \begin{itemize}
+            \item $$\text{tool}(y_i) \in \{0,1\}$$
+            \item $$\text{format}(y_i) \in \{0, 1\}$$
+        \end{itemize}
+
+        \item let candidate propose updated prediction protein set $$\hat{C}_{t+1}$$
+
+        \item compute complex/exploration reward:
+        \begin{itemize}
+            \item $\Delta F1 = F1(C, \hat{C}_{t+1}) - F1(C, \hat{C}_{t}) $
+            \item or Jaccard, Recall
+        \end{itemize}
+
+        \item combine rewards
+    \end{itemize}
+    
+    
 
     \item 2: On-policy RL (PPO/GRPO) once rollouts are coherent
     \begin{itemize}
@@ -243,7 +330,7 @@ formalize the graph exploration problem as sequential decision-making
     \begin{itemize}
         \item positive: tool call is syntactically valid, executes
         \item positive: returned results are non-empty, properly formatted
-        \item negative: per tool call to encourage efficiency???
+        \item negative: per tool call to encourage efficiency
         \item negative: penalty for repeated invalid queries/loops
     \end{itemize}
 
@@ -258,6 +345,12 @@ formalize the graph exploration problem as sequential decision-making
     \begin{itemize}
         \item positively reward coverage of multiple neighborhooods
         \item penalize revisits / redundant expansion
+    \end{itemize}
+
+    \item mechanistic interpretation reward (ground truth, groundedness)
+    \begin{itemize}
+        \item compare predicted mechanistic labels to CORUM annotations
+        \item reward evidence-grounded summaries, and penalize unsupported claims (+ for mentioning retrieved terms, - for mentioning unretrieved terms)
     \end{itemize}
 \end{itemize}
 
@@ -290,8 +383,9 @@ formalize the graph exploration problem as sequential decision-making
     \item prevents mode collapse
 \end{itemize}
 
-\section{Expected Results and Contributions}
+\subsection{Evaluation and Benchmarks}
 
+\section{Expected Results and Contributions}
 \subsection{Expected results}
 \begin{itemize}
     \item higher complex recovery on held-out CORUM complexes vs
@@ -309,6 +403,25 @@ formalize the graph exploration problem as sequential decision-making
     \item training pipeline for tool-use agents for , driven by deterministic feedback 
     \item empirical demonstration that smaller models can achieve strong mechanistic exploration performance with lower inference cost than frontier models
 \end{itemize}
+
+\section{Training Recipe}
+\subsection{Build tool interface and schemas}
+
+\subsection{Preprocess CORUM}
+
+\subsection{Define task templates and mechanistic targets}
+
+\subsection{Build Mechanistic Summary Dataset Automatically}
+
+\subsection{SFT Warm-Start}
+
+\subsection{Offline preference dataset generation}
+
+\subsection{DPO Training with TRL}
+
+\subsection{Online RL for long-horizon behavior}
+
+\subsection{Final evaluation and ablations}
 
 \section{Discussion}
 \subsection{CORUM licensing}
