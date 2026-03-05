@@ -1,5 +1,5 @@
 \documentclass[thesis,letterpaper,12pt]{utthesis}
-\usepackage{graphicx} % Required for inserting images
+\usepackage{graphicx}
 \usepackage{biblatex}
 
 \title{MENTOR-RL Methods}
@@ -9,65 +9,65 @@
 \addbibresource{references.bib}
 
 \begin{document}
-
 \maketitle
 
 \section{Introduction and Motivation}
+
 \subsection{Context: Biological Interpretation as Mechanistic Discovery}
 \begin{itemize}
-    \item Biological interpretation involves the development/discovery of mechanistic relationships between biological entities such as genes, proteins, RNA, and other molecular components 
+    \item Biological interpretation involves the development/discovery of mechanistic relationships between biological entities such as genes, proteins, RNA, and other molecular components.
 
-    \item It is essential for discovering context-specific relationships and developing models of disease, phenotypes, pathways, and regulatory systems
+    \item It is essential for discovering context-specific relationships and developing models of disease, phenotypes, pathways, and regulatory systems.
 
     \item In recent years, ML/AI-based methods such as iRF, MENTOR, and related approaches have accelerated biological interpretation through the construction of biologically informed networks, which scientists explore to generate mechanistic and functional hypotheses.
 
     \item As these methods increase the resolution and scope of inferred networks, biological interpretation has become increasingly mediated by large, densely connected, multi-scale graph structures.
 
     \item As biological networks and supporting databases grow, mechanistic exploration requires many iterative queries and multi-step reasoning.
+
+    \item Recent agentic interpretation systems (e.g., MENTOR-IA) demonstrate that provenance-preserving retrieval (gene metadata, GO/pathways, literature) and tool-mediated synthesis can yield high-fidelity mechanistic narratives, but the approach remains expensive and not optimized as a trainable policy.
 \end{itemize}
 
 \subsection{Problem: Biological Interpretation is Bottlenecked by Scale, both in Human Cognition and Frontier Model Cost}
 \begin{itemize}
     \item Although ML/AI methods have refined mechanistic focus into groups of functionally related clades of genes, these clades can still be massive and intractable for individual researchers to systematically explore.
 
-    \item Additionally, most research emphasizes a deep-but-narrow focus on a small subset of functionally related genes, which can overlook broader yet biologically meaningful network context, particularly in highly interactive systems such as living organisms
+    \item Additionally, most research emphasizes a deep-but-narrow focus on a small subset of functionally related genes, which can overlook broader yet biologically meaningful network context, particularly in highly interactive systems such as living organisms.
 
     \item As biological networks grow in size and complexity, the combinatorial space of possible multi-hop interactions expands rapidly, while human interpretive capacity remains fixed.
 
-    \item While Large Language Models (LLMs) excel at processing and synthesizing large volumes of information, frontier inference cost scales with exploration length and reasoning depth, limiting agentic deployment scenarios.
+    \item While Large Language Models (LLMs) can synthesize large volumes of information, frontier inference cost scales with exploration length and reasoning depth, limiting agentic deployment for long-horizon network traversal.
 
-    \item This mismatch creates a scaling limit in biological mechanistic interpretation: although computational methods can generate increasingly rich relational structures, the downstream synthesis of mechanistic hypotheses remains constrained by human bandwidth, and large language model cost.
+    \item This mismatch creates a scaling limit in biological mechanistic interpretation: rich relational structures can be computed, but downstream synthesis remains constrained by human bandwidth and model cost.
 
-    \item consequently, the speed, breadth, and contextual depth of mechanistic discovery are limited, particularly for complex traits, polygenic diseases, and multi-layer regulatory systems.
+    \item Consequently, the speed, breadth, and contextual depth of mechanistic discovery are limited, particularly for complex traits, polygenic diseases, and multi-layer regulatory systems.
 \end{itemize}
 
 \subsection{Resolution: AI-Guided Reasoning to Extend Mechanistic Interpretation Beyond Human Scale}
 \begin{itemize}
     \item Open-source LLMs present an opportunity to aid scientists in mechanistic discovery tasks without being cost prohibitive.
 
-    \item recent developments in agent-based systems enable models to invoke deterministic tools, allowing structured interaction with network-based representations and substantially reducing hallucination. Further more, open-source releases allow users to train models to excel at specific tasks while being free to use, besides computational cost.
-    
-    \item we propose \textbf{MENTOR-RL}, a reasoning agent trained on human-annotated biological ground truth and verifiable interaction objective, enabling scalable mechanistic exploration without a reliance on proprietary models.
+    \item Recent developments in agent-based systems enable models to invoke deterministic tools with structured interfaces, substantially reducing hallucination and enabling provenance-preserving exploration.
 
-    \item by training a transformer-based agent with reinforcement learning across a diverse set of tool-use tasks and contextual levels of biological network data, we aim to produce a model that can collaborate with researchers to traverse complex networks, synthesize \textit{multi-hop} mechanistic hypotheses, and integrate both local functional structure and global topological context.
+    \item We propose \textbf{MENTOR-RL}, a reasoning agent trained on human-annotated biological ground truth and verifiable interaction objectives, enabling scalable mechanistic exploration without reliance on proprietary models.
 
-    \item Leveraging open-source model offerings allows us to deliver a model that can be deployed locally, with training cost amortized across many exploration sessions.
+    \item By training a transformer-based agent with reinforcement learning across tool-use tasks and contextual levels of biological network data, we aim to produce a model that can traverse complex networks, synthesize \textit{multi-hop} mechanistic hypotheses, and integrate both local functional structure and global topological context.
 
-    \item Rather than replacing scientific judgment, MENTOR-RL is intended to extend the effective interpretive bandwidth of researchers, enabling broader, faster, and more context-aware mechanistic discovery.
+    \item Leveraging open-source model offerings allows local deployment, with training cost amortized across many exploration sessions.
 
-    
+    \item Rather than replacing scientific judgment, MENTOR-RL extends researcher interpretive bandwidth, enabling broader, faster, and more context-aware mechanistic discovery.
 \end{itemize}
 
 \section{Background and Related Work}
+
 \subsection{Biological Network-Based Interpretation}
-Establishes what interpretation is, how networks became central, and where current methods stop
 \begin{itemize}
     \item Protein complexes as mechanistic ground truth
     \begin{itemize}
         \item CORUM: a benchmark set for mammalian protein complexes \cite{tsitsiridis2023corum}
         \item licensing constraints, split strategy
     \end{itemize}
-    
+
     \item Mechanistic discovery in systems biology
     \begin{itemize}
         \item \cite{barabasi2004network}
@@ -81,27 +81,32 @@ Establishes what interpretation is, how networks became central, and where curre
         \item \cite{cliff2019high}
     \end{itemize}
 
-    \item MENTOR
+    \item MENTOR and multiplex biological networks
     \begin{itemize}
-        \item MENTOR
+        \item MENTOR (and multiplex integration across PPI, co-expression, TF-target, and other evidence layers)
+    \end{itemize}
+
+    \item Agentic gene set interpretation pipelines (tool-mediated synthesis)
+    \begin{itemize}
+        \item MENTOR-IA: provenance-preserving retrieval (gene metadata + GO/pathways + literature) and multi-agent synthesis
     \end{itemize}
 
     \item Network propagation and diffusion methods (RWR)
     \begin{itemize}
-        \item \cite{kohler2008walking} 
+        \item \cite{kohler2008walking}
         \item \cite{vanunu2010associating}
         \item \cite{tong2006fast}
         \item \cite{cowen2017network}
     \end{itemize}
 
-    \item community detection and subgraph extraction
+    \item Community detection and subgraph extraction
     \begin{itemize}
         \item \cite{newman2004finding}
         \item \cite{blondel2008fast}
         \item \cite{fortunato2010community}
     \end{itemize}
 
-    \item graph neural networks in biological modeling
+    \item Graph neural networks in biological modeling
     \begin{itemize}
         \item \cite{kipf2016semi}
         \item \cite{hamilton2017inductive}
@@ -110,24 +115,23 @@ Establishes what interpretation is, how networks became central, and where curre
 \end{itemize}
 
 \subsection{Transformer-Based Structured Reasoning}
-Showing the evolution from language modeling -> tool use -> agent systems -> structured reasoning
 \begin{itemize}
-    \item transformer architectures and scaling
+    \item Transformer architectures and scaling
     \begin{itemize}
         \item \cite{vaswani2017attention}
         \item \cite{brown2020language}
         \item \cite{kaplan2020scaling}
         \item \cite{hoffmann2022training}
     \end{itemize}
-    
-    \item emergent reasoning in transformers
+
+    \item Emergent reasoning in transformers
     \begin{itemize}
         \item \cite{wei2022chain}
         \item \cite{kojima2022large}
         \item \cite{wang2022self}
     \end{itemize}
 
-    \item tool-augmented LMs (ReAct, ToolFormer)
+    \item Tool-augmented LMs (ReAct, ToolFormer)
     \begin{itemize}
         \item \cite{schick2023toolformer}
         \item \cite{yao2022react}
@@ -135,19 +139,23 @@ Showing the evolution from language modeling -> tool use -> agent systems -> str
         \item \cite{patil2024gorilla}
     \end{itemize}
 
+    \item Modular agentic architectures with verification and shared memory
+    \begin{itemize}
+        \item Eubiota-style Planner/Executor/Verifier/Generator decomposition; schema-first tools; traceable memory
+    \end{itemize}
+
     \item Retrieval-augmented and graph-augmented models (RAG, GraphRAG)
     \begin{itemize}
-        \item 
+        \item
     \end{itemize}
-    
-    \item limitations of LLMs in long-horizon structured reasoning
+
+    \item Limitations of LLMs in long-horizon structured reasoning
     \begin{itemize}
         \item
     \end{itemize}
 \end{itemize}
 
 \subsection{Reinforcement Learning for Sequential Decision-Making}
-formalize the graph exploration problem as sequential decision-making
 \begin{itemize}
     \item Policy gradient methods (PPO)
     \begin{itemize}
@@ -161,7 +169,7 @@ formalize the graph exploration problem as sequential decision-making
 
     \item RL for tool-use and planning agents
     \begin{itemize}
-        \item
+        \item outcome-driven, trajectory-level optimization (e.g., GRPO-style group rollouts for long-horizon tool use)
     \end{itemize}
 
     \item RL in graph and combinatorial environments
@@ -171,37 +179,38 @@ formalize the graph exploration problem as sequential decision-making
 \end{itemize}
 
 \section{Proposed Methodology}
+
 \subsection{Agent Loop Formulation}
 \begin{itemize}
-    \item Formalize the graph exploration task as an iterative agent loop, with query/hypothesis generation being defined at discrete decision points
+    \item Formalize mechanistic graph exploration as an iterative agent loop with discrete decision points.
 
-    \item Working model updates
+    \item Adopt a modular loop (Planner/Executor/Verifier/Generator) to separate (i) action selection, (ii) schema-valid tool execution, (iii) evidence sufficiency checks, and (iv) grounded synthesis.
+
+    \item Working model updates:
     \begin{enumerate}
-        \item propose a hypothesis
-        \item select a graph query (or queries)
+        \item propose a hypothesis / subgoal
+        \item select a tool call (or calls)
         \item interpret returned results
-        \item update working model
+        \item update structured state + working model
     \end{enumerate}
 
-    \item model structured state: alongside the working hypothesis, used for verifiable rewards
+    \item Structured state $s_t$ (used for verifiable rewards):
     \begin{enumerate}
         \item current seed set
         \item candidate protein set
-        \item evidence edges / provenance
-        \item predicted complex id
+        \item evidence edges / provenance (tool outputs, network paths)
+        \item predicted complex id (or none)
         \item stop / continue decision
     \end{enumerate}
 
-    \item Model actions are emitted in a machine-parsable schema (JSON):
+    \item Model actions emitted in a machine-parsable schema (JSON):
     \begin{itemize}
-        \item tool call
+        \item tool call + arguments (typed; validated)
         \item proposed state update
         \item mechanistic labels
         \item short finding statement
         \item stop/continue
     \end{itemize}
-
-    \item each decision is an evaluable action within a sequential decision-making and refinement process
 \end{itemize}
 
 \subsection{Task Outputs and Mechanistic Targets}
@@ -209,234 +218,156 @@ formalize the graph exploration problem as sequential decision-making
     \item The agent optimizes three outputs:
     \begin{enumerate}
         \item Complex membership prediction $\hat{C}$
-        
-        \item Mechanistic labels $\hat{y}_{\text{mech}}$: localization, functional category, and signature terms
-        
-        \item Evidence-grounded mechanistic summary
+        \item Mechanistic labels $\hat{y}_{\text{mech}}$: localization, functional category, signature terms
+        \item Evidence-grounded mechanistic summary (with explicit provenance pointers to retrieved evidence)
     \end{enumerate}
-    
-    \item Mechanistic ground truth $y_{\text{text}}$ is derived from CORUM curated annotations: function, localization, and signature terms
+
+    \item Mechanistic ground truth is derived from CORUM curated annotations (function/localization/signature terms) augmented with tool-retrieved context (GO terms, pathway membership, and literature abstracts).
 \end{itemize}
 
 \subsection{Data, Resources, and Environment}
 \begin{itemize}
-    \item Agent-Based training corpus
+    \item Tool and database access (from existing agentic infrastructure):
     \begin{itemize}
-        \item 
-    \end{itemize}
-    
-    \item CORUM-grounded training corpus
-    \begin{itemize}
-       \item sample a CORUM complex $C$ 
-       \item given $k$ seed proteins from $C$, predict the complex, or none
-       \item negative examples: distinguish a true complex from a size-matched random set (similar to mentor-EV) 
-       \item rewards are computed from real human-annotated labels
-       \item CORUM provides curated annotations beyond membership (function, localization, references) which are used as mechanistic ground truth
-       \item construct a per-complex mechanistic target record: $\{C, \text{function\_text}, \text{localization}, \text{functional\_category}, \text{references}\}$
+        \item Gene metadata + GO + pathway membership via MyGene.info-style APIs
+        \item Literature abstracts via EMBL-EBI/PMID-based retrieval; abstract ranking via embedding/TF--IDF relevance scoring
     \end{itemize}
 
-    \item Graph environment
+    \item CORUM-grounded training corpus:
     \begin{itemize}
-        \item local graph database, accessed via SQL queries and graph functions (neighbors, shortest path, random walk, subgraph extraction, LOE)
-        \item interpretation/annotation tools, much like what the agents use (protein descriptions, GO/pathway membership, cellular component/localization)
+       \item Sample a CORUM complex $C$; given $k$ seed proteins from $C$, recover members and mechanistic labels, or abstain.
+       \item Negative examples: distinguish a true complex from degree/size-matched decoys.
+       \item Construct per-complex mechanistic targets: $\{C,\text{function\_text},\text{localization},\text{functional\_category},\text{references}\}$.
     \end{itemize}
 
-
+    \item Graph environment (local multiplex):
+    \begin{itemize}
+        \item Multiplex graph composed of PPI + co-expression + TF-target + pathway/evidence layers (consistent with prior MENTOR multiplex usage).
+        \item Accessed via SQL/graph functions (neighbors, shortest path, random walk, subgraph extraction).
+        \item Optional subnetwork induction utilities (e.g., shortest-path-based subgraph extraction).
+    \end{itemize}
 \end{itemize}
 
-\subsection{Mechanistic Summary Dataset}
+\subsection{Mechanistic Summary Dataset (tool use $\rightarrow$ evidence $\rightarrow$ finding $\rightarrow$ summary)}
 \begin{itemize}
-    \item Mechanistic Summary Dataset
-    \begin{itemize}
-        \item goal: produce training episodes that connect tool use $\rightarrow$ evidence $\rightarrow$ mechanistic findings $\rightarrow$ summary
-        
-        \item for each CORUM complex, generate exploration tasks (complex completion) and log a tool-call trajectory (actions + observations)
-        
-        \item generate the working hypothesis statement for the next iteration, summarizing what was learned \textbf{initally template this from tool outputs functionally as a starting point}
-        
-        \item final target output:
-        \begin{enumerate}
-            \item predicted complex members $\hat{C}$
-            \item mechanistic labels (localization, functional category, signature terms)
-            \item human-readable mechanistic summary trained against CORUM curated annotations
-        \end{enumerate}
-    \end{itemize}
+    \item Goal: produce training episodes that explicitly connect tool calls and observations to mechanistic conclusions.
+
+    \item For each CORUM complex:
+    \begin{enumerate}
+        \item initialize with $k$ seeds and a minimal study/background prompt
+        \item run an exploration episode (log actions + observations + state updates)
+        \item extract a per-step ``finding'' record: what evidence was retrieved and what was learned
+        \item produce a final mechanistic summary that (i) cites retrieved evidence and (ii) aligns with CORUM annotations
+    \end{enumerate}
+
+    \item Start with templated ``finding'' statements derived directly from tool outputs (high precision), then progressively replace templates with model-generated summaries as training improves.
 \end{itemize}
 
 \subsection{Training Framework}
 \begin{itemize}
+    \item \textbf{Phase 0: General-knowledge tool pretraining (SFT / continued pretraining)}
+    \begin{itemize}
+        \item Use API-grounded tasks over MyGene.info/GO/Reactome/KEGG-style endpoints:
+        gene $\rightarrow$ function, GO category, localization; pathway membership; gene synonyms/IDs; mechanistic term extraction.
+        \item Objective: strengthen biological reasoning and tool literacy before CORUM/RL.
+    \end{itemize}
 
-    \item Tool call/ format SFT for proper tool calling
+    \item Tool-call SFT for proper schema-valid tool calling (reduce invalid actions).
 
-    \item Agent-Derived SFT for gene info/world-knowledge
-
-    \item evidence $\rightarrow$ interpretation SFT
+    \item Evidence $\rightarrow$ interpretation SFT:
     \begin{itemize}
         \item input: tool observations + structured state
-        \item target: mechanistic label prediction, short mechanistic finding/summary
+        \item target: mechanistic labels + short grounded finding statement
     \end{itemize}
-    
-    \item implement two RL training modes
 
-    \item 1: preference optimization with CORUM labels
+    \item \textbf{Offline preference optimization with CORUM-derived scores} (no expert model):
     \begin{itemize}
-        \item context $x$: full trajectory
-        \item candidates ${y_i}$: next-step proposals $\rightarrow$ query, update, and hypothesis
-        \item score each candidate via deterministic metrics \ref{sec:rewards}
-        \item construct preference pairs: best vs. worst output or pairwise ranking, producing a dataset of $\{prompt, chosen, rejected\}$.
-        \item TRL DPOTrainer supports tool-calling datasets with tool calls, tool responses, and a tools call with schemas
-        \item optimize with DPO 
+        \item context $x$: current trajectory state
+        \item candidates $\{y_i\}$: next-step proposals (tool call + state update + optional finding)
+        \item rank candidates by deterministic reward components (tool validity, $\Delta$F1, mechanistic label match, groundedness)
+        \item build $\{\text{prompt}, \text{chosen}, \text{rejected}\}$ for DPO
     \end{itemize}
 
-    \item 1.1: DPO training loop
+    \item \textbf{Online RL for long-horizon behavior} (PPO/GRPO-style):
     \begin{itemize}
-        \item at decision point $t$, we have target complex proteins $C$, current structured state $s_t$, and current prompt/working model $x_t$
-
-        \item sample $N$ candidates from the base model/SFT checkpoint: $$ y_1, ..., y_N = \text{sample}(\pi_{\theta}(\cdot | x_t))$$
-
-        \item score tool validity and formatting:
-        \begin{itemize}
-            \item $$\text{tool}(y_i) \in \{0,1\}$$
-            \item $$\text{format}(y_i) \in \{0, 1\}$$
-        \end{itemize}
-
-        \item let candidate propose updated prediction protein set $$\hat{C}_{t+1}$$
-
-        \item compute complex/exploration reward:
-        \begin{itemize}
-            \item $\Delta F1 = F1(C, \hat{C}_{t+1}) - F1(C, \hat{C}_{t}) $
-            \item or Jaccard, Recall
-        \end{itemize}
-
-        \item combine rewards
+        \item full episodes with model controlling actions under compute budgets
+        \item group rollouts for variance reduction; trajectory-level outcome rewards propagated to planning decisions
     \end{itemize}
-    
-    
-
-    \item 2: On-policy RL (PPO/GRPO) once rollouts are coherent
-    \begin{itemize}
-        \item full episodes with model controlling actions
-        \item optimize policy directly
-    \end{itemize}
-
-    \item DPO improves model coherence in early stages
-    \item PPO/GRPO expand to long horizons
-
 \end{itemize}
 
 \subsection{Reward Design and Decomposition}\label{sec:rewards}
 \begin{itemize}
-    \item query validity, tool discipline (dense + cheap rewards)
+    \item Query validity and tool discipline:
     \begin{itemize}
-        \item positive: tool call is syntactically valid, executes
-        \item positive: returned results are non-empty, properly formatted
-        \item negative: per tool call to encourage efficiency
-        \item negative: penalty for repeated invalid queries/loops
+        \item + valid schema, executes
+        \item + non-empty returns when appropriate
+        \item -- per tool call (efficiency) and repeated invalid loops
     \end{itemize}
 
-    \item complex recovery reward (mechanistic ground truth)
+    \item Complex recovery reward:
     \begin{itemize}
-        \item define $C$ as the ground-truth corum complex, $\hat{C}$ as the model-predicted complex
-        \item use set-based metrics: F1, jaccard overlap, precision@k, recall@k
-        \item dense shaping: positive reward when model adds a correct, unseen member of a complex, penalize when an incorrect protein is added
+        \item set-based metrics: F1/Jaccard/precision@k/recall@k
+        \item dense shaping: + for adding correct unseen members; -- for adding incorrect proteins
     \end{itemize}
 
-    \item topological/contextual rewards
-    \begin{itemize}
-        \item positively reward coverage of multiple neighborhooods
-        \item penalize revisits / redundant expansion
-    \end{itemize}
-
-    \item mechanistic interpretation reward (ground truth, groundedness)
+    \item Mechanistic interpretation reward:
     \begin{itemize}
         \item compare predicted mechanistic labels to CORUM annotations
-        \item reward evidence-grounded summaries, and penalize unsupported claims (+ for mentioning retrieved terms, - for mentioning unretrieved terms)
+        \item groundedness: + for using retrieved terms/evidence; -- for unsupported claims
+    \end{itemize}
+
+    \item Topological/contextual rewards:
+    \begin{itemize}
+        \item + explore complementary neighborhoods; -- redundant revisits
     \end{itemize}
 \end{itemize}
 
 \subsection{Curriculum and Optimization Strategy}
 \begin{itemize}
-    \item 1: intra-complex tasks (easy, dense rewards)
-    \begin{itemize}
-        \item complex completion from 1-3 seeds
-        \item short horizon, high reward density
-    \end{itemize}
+    \item 1: intra-complex completion (short horizon, dense rewards)
 
-    \item 2: harder intra-complex, decoys
-    \begin{itemize}
-        \item degree-matched random negatives 
-        \item partial complexes with missing edges / noisy graphs
-    \end{itemize}
+    \item 2: intra-complex with decoys + noisy graphs
 
-    \item 3: inter-complex reasoning
-    \begin{itemize}
-        \item two complexes connected by shared pathways/functional linkage
-        \item requires exploration outside of local topology, encourages RWR usage
-        \item can measure correct complex separation
-    \end{itemize}
-\end{itemize}
-
-\subsection{Verbalized Sampling and Diversity}
-\begin{itemize}
-    \item use verbalized sampling to produce diverse candidate actions
-    \item CORUM-scored ranking to choose preference pairs
-    \item prevents mode collapse
+    \item 3: inter-complex reasoning (harder; encourages broader context / diffusion)
 \end{itemize}
 
 \subsection{Evaluation and Benchmarks}
-
-\section{Expected Results and Contributions}
-\subsection{Expected results}
 \begin{itemize}
-    \item higher complex recovery on held-out CORUM complexes vs
+    \item Automatic:
     \begin{itemize}
-        \item heuristic baselines (RWR, propagation, centrality)
-        \item untrained tool-harness baseline (same base LLM, no RL)
+        \item held-out CORUM recovery (F1/Jaccard/precision@k), mechanistic label accuracy
+        \item tool efficiency: tool calls per successful recovery; latency/compute budgets
+        \item robustness to graph noise / dropped edges
     \end{itemize}
-    \item lower tool call count per successful recovery (efficiency)
-    \item better robustness to graph noise / dropped out edges
+
+    \item Human evaluation for summaries (adapt rubric used in existing agentic interpretation systems):
+    \begin{itemize}
+        \item accuracy, relevance, biological plausibility, hypothesis generation, integration
+        \item explicit checks for provenance-grounded statements
+    \end{itemize}
 \end{itemize}
 
-\subsection{Contributions}
+\section{Expected Results and Contributions}
 \begin{itemize}
-    \item a benchmarkable mechanistic exploration environment grounded in CORUM
-    \item training pipeline for tool-use agents for , driven by deterministic feedback 
-    \item empirical demonstration that smaller models can achieve strong mechanistic exploration performance with lower inference cost than frontier models
+    \item A benchmarkable mechanistic exploration environment grounded in CORUM.
+    \item A training pipeline for tool-use agents driven by deterministic feedback (no proprietary judge).
+    \item Evidence that smaller open models can achieve strong mechanistic exploration with lower inference cost than frontier models.
 \end{itemize}
 
 \section{Training Recipe}
-\subsection{Build tool interface and schemas}
-
-\subsection{Preprocess CORUM}
-
-\subsection{Define task templates and mechanistic targets}
-
-\subsection{Build Mechanistic Summary Dataset Automatically}
-
-\subsection{SFT Warm-Start}
-
-\subsection{Offline preference dataset generation}
-
-\subsection{DPO Training with TRL}
-
-\subsection{Online RL for long-horizon behavior}
-
-\subsection{Final evaluation and ablations}
+\subsection{Build tool interface, schemas, and shared memory (Planner/Executor/Verifier/Generator)}
+\subsection{Preprocess CORUM and split train/val/test}
+\subsection{Build multiplex graph environment and query operators}
+\subsection{Phase 0: general-knowledge tool pretraining (MyGene/GO/Reactome/KEGG tasks)}
+\subsection{SFT warm-start: tool calling + evidence-to-finding}
+\subsection{Offline preference dataset generation from CORUM-scored candidates}
+\subsection{DPO training (TRL) and ablations}
+\subsection{Online RL (PPO/GRPO-style) for long-horizon exploration}
+\subsection{Final evaluation: recovery, labels, summaries, efficiency}
 
 \section{Discussion}
 \subsection{CORUM licensing}
-\begin{itemize}
-    \item compliance with corum licensing/attribution
-    \item work for research/academic purposes
-\end{itemize}
-
-\subsection{No expert judge modeling}
-\begin{itemize}
-    \item no dependence on proprietary models
-    \item improves reproducibility
-    \item ensures learned policy is driven by human annotation, not preference artifacts = more robust
-\end{itemize}
+\subsection{No expert judge modeling (reproducibility + ToU safety)}
 
 \printbibliography
-
 \end{document}
