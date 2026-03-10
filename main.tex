@@ -13,50 +13,20 @@
 
 \section{Introduction and Motivation}
 
-\subsection{Context: Biological Interpretation as Mechanistic Discovery}
-\begin{itemize}
-    \item Biological interpretation involves the development/discovery of mechanistic relationships between biological entities such as genes, proteins, RNA, and other molecular components.
+\subsection{Biological Interpretation as Mechanistic Discovery}
+Biological interpretation involves the development/discovery of mechanistic relationships between biological entities such as genes, proteins, RNA, and other molecular components. Interpretation is essential for discovering context-specific relationships and developing models of disease, phenotypes, pathways, and regulatory systems. In recent years, machine learning (ML) and artificial intelligence (AI) techniques such as iterative random forest (iRF) \cite{basu2018iterative, cliff2019high}, MENTOR \cite{}, and related approaches have accelerated biological research through the construction of biologically informed networks, which scientists explore to generate mechanistic and functional hypotheses.
 
-    \item It is essential for discovering context-specific relationships and developing models of disease, phenotypes, pathways, and regulatory systems.
+As these methods increase the resolution and scope of inferred networks, biological interpretation has become increasingly mediated by large, densely connected, multi-scale graph structures. To comprehensively examine these large biological networks and supporting databases, mechanistic exploration requires iterative querying and multi-step reasoning. Recent agentic interpretation systems \cite{eubiota} demonstrate that provenance-preserving retrieval and tool-mediated synthesis can yield high-fidelity mechanistic narratives, but the approach remains expensive and not fully optimized as a trainable policy.
 
-    \item In recent years, ML/AI-based methods such as iRF, MENTOR, and related approaches have accelerated biological interpretation through the construction of biologically informed networks, which scientists explore to generate mechanistic and functional hypotheses.
+\subsection{Biological Interpretation is Bottlenecked by Scale, both in Human Cognition and Frontier Model Cost}
+Although ML/AI methods have refined mechanistic focus into groups of functionally related clades of genes, these clades can still be massive and intractable for individual researchers to systematically explore. Additionally, most research emphasizes a deep-but-narrow focus on a small subset of functionally related genes, which can overlook broader, yet biologically meaningful, network context, particularly in highly interactive systems such as living organisms. As biological networks grow in size and complexity, the combinatorial space of possible multi-hop interactions expands rapidly, while human interpretive capacity remains fixed.
 
-    \item As these methods increase the resolution and scope of inferred networks, biological interpretation has become increasingly mediated by large, densely connected, multi-scale graph structures.
+While Large Language Models (LLMs) can synthesize large volumes of information, frontier inference cost scales with exploration length and reasoning depth, limiting agentic deployment for long-horizon network traversal. This mismatch creates a scaling limit in biological mechanistic interpretation: rich relational structures can be computed, but downstream synthesis remains constrained by human bandwidth and model cost. Consequently, the speed, breadth, and contextual depth of mechanistic discovery are limited, particularly for complex traits, polygenic diseases, and multi-layer regulatory systems.
 
-    \item As biological networks and supporting databases grow, mechanistic exploration requires many iterative queries and multi-step reasoning.
+\subsection{AI-Guided Reasoning to Extend Mechanistic Interpretation Beyond Human Scale}
+Open-source LLMs present an opportunity to aid scientists in mechanistic discovery tasks without being cost prohibitive. Recent developments in agent-based systems enable models to invoke deterministic tools with structured interfaces, substantially reducing hallucination and enabling provenance-preserving exploration. We propose \textbf{MENTOR-RL}, a reasoning agent trained on human-annotated biological ground truth and verifiable interaction objectives, enabling scalable mechanistic exploration without reliance on proprietary models.
 
-    \item Recent agentic interpretation systems (e.g., MENTOR-IA) demonstrate that provenance-preserving retrieval (gene metadata, GO/pathways, literature) and tool-mediated synthesis can yield high-fidelity mechanistic narratives, but the approach remains expensive and not optimized as a trainable policy.
-\end{itemize}
-
-\subsection{Problem: Biological Interpretation is Bottlenecked by Scale, both in Human Cognition and Frontier Model Cost}
-\begin{itemize}
-    \item Although ML/AI methods have refined mechanistic focus into groups of functionally related clades of genes, these clades can still be massive and intractable for individual researchers to systematically explore.
-
-    \item Additionally, most research emphasizes a deep-but-narrow focus on a small subset of functionally related genes, which can overlook broader yet biologically meaningful network context, particularly in highly interactive systems such as living organisms.
-
-    \item As biological networks grow in size and complexity, the combinatorial space of possible multi-hop interactions expands rapidly, while human interpretive capacity remains fixed.
-
-    \item While Large Language Models (LLMs) can synthesize large volumes of information, frontier inference cost scales with exploration length and reasoning depth, limiting agentic deployment for long-horizon network traversal.
-
-    \item This mismatch creates a scaling limit in biological mechanistic interpretation: rich relational structures can be computed, but downstream synthesis remains constrained by human bandwidth and model cost.
-
-    \item Consequently, the speed, breadth, and contextual depth of mechanistic discovery are limited, particularly for complex traits, polygenic diseases, and multi-layer regulatory systems.
-\end{itemize}
-
-\subsection{Resolution: AI-Guided Reasoning to Extend Mechanistic Interpretation Beyond Human Scale}
-\begin{itemize}
-    \item Open-source LLMs present an opportunity to aid scientists in mechanistic discovery tasks without being cost prohibitive.
-
-    \item Recent developments in agent-based systems enable models to invoke deterministic tools with structured interfaces, substantially reducing hallucination and enabling provenance-preserving exploration.
-
-    \item We propose \textbf{MENTOR-RL}, a reasoning agent trained on human-annotated biological ground truth and verifiable interaction objectives, enabling scalable mechanistic exploration without reliance on proprietary models.
-
-    \item By training a transformer-based agent with reinforcement learning across tool-use tasks and contextual levels of biological network data, we aim to produce a model that can traverse complex networks, synthesize \textit{multi-hop} mechanistic hypotheses, and integrate both local functional structure and global topological context.
-
-    \item Leveraging open-source model offerings allows local deployment, with training cost amortized across many exploration sessions.
-
-    \item Rather than replacing scientific judgment, MENTOR-RL extends researcher interpretive bandwidth, enabling broader, faster, and more context-aware mechanistic discovery.
-\end{itemize}
+By training a transformer-based agent with reinforcement learning across tool-use tasks and contextual levels of biological network data, we aim to produce a model that can traverse complex networks, synthesize \textit{multi-hop} mechanistic hypotheses, and integrate both local functional structure and global topological context. Leveraging open-source model offerings allows local deployment, with training cost amortized across many exploration sessions. Rather than replacing scientific judgment, MENTOR-RL extends researcher interpretive bandwidth, enabling broader, faster, and more context-aware mechanistic discovery.
 
 \section{Background and Related Work}
 
@@ -179,8 +149,9 @@
 \end{itemize}
 
 \section{Proposed Methodology}
+Our proposed methodology is structured as follows: in Sections \ref{sec:agent_loop} and \ref{sec:task}, we present an iterative process for long-horizon exploration and formalize our mechanistic interpretation task. In Sections \ref{sec:data} and \ref{sec:mechanistic-summary}, we describe our dataset construction and environment creation process. In sections \ref{sec:training}, \ref{sec:rewards}, and \ref{sec:curriculum}, we outline our training pipeline, reward definitions, and curriculum construction. Finally, in section \ref{sec:eval}, we discuss our process for evaluating and benchmarking our model.
 
-\subsection{Agent Loop Formulation}
+\subsection{Agent Loop Formulation}\label{sec:agent_loop}
 \begin{itemize}
     \item Formalize mechanistic graph exploration as an iterative agent loop with discrete decision points.
 
@@ -213,7 +184,7 @@
     \end{itemize}
 \end{itemize}
 
-\subsection{Task Outputs and Mechanistic Targets}
+\subsection{Task Outputs and Mechanistic Targets}\label{sec:task}
 \begin{itemize}
     \item The agent optimizes three outputs:
     \begin{enumerate}
@@ -225,7 +196,7 @@
     \item Mechanistic ground truth is derived from CORUM curated annotations (function/localization/signature terms) augmented with tool-retrieved context (GO terms, pathway membership, and literature abstracts).
 \end{itemize}
 
-\subsection{Data, Resources, and Environment}
+\subsection{Data, Resources, and Environment}\label{sec:data}
 \begin{itemize}
     \item Tool and database access (from existing agentic infrastructure):
     \begin{itemize}
@@ -248,7 +219,7 @@
     \end{itemize}
 \end{itemize}
 
-\subsection{Mechanistic Summary Dataset (tool use $\rightarrow$ evidence $\rightarrow$ finding $\rightarrow$ summary)}
+\subsection{Mechanistic Summary Dataset (tool use $\rightarrow$ evidence $\rightarrow$ finding $\rightarrow$ summary)}\label{sec:mechanistic-summary}
 \begin{itemize}
     \item Goal: produce training episodes that explicitly connect tool calls and observations to mechanistic conclusions.
 
@@ -263,7 +234,7 @@
     \item Start with templated ``finding'' statements derived directly from tool outputs (high precision), then progressively replace templates with model-generated summaries as training improves.
 \end{itemize}
 
-\subsection{Training Framework}
+\subsection{Training Framework}\label{sec:training}
 \begin{itemize}
     \item \textbf{Phase 0: General-knowledge tool pretraining (SFT / continued pretraining)}
     \begin{itemize}
@@ -322,7 +293,7 @@
     \end{itemize}
 \end{itemize}
 
-\subsection{Curriculum and Optimization Strategy}
+\subsection{Curriculum and Optimization Strategy}\label{sec:curriculum}
 \begin{itemize}
     \item 1: intra-complex completion (short horizon, dense rewards)
 
@@ -331,7 +302,7 @@
     \item 3: inter-complex reasoning (harder; encourages broader context / diffusion)
 \end{itemize}
 
-\subsection{Evaluation and Benchmarks}
+\subsection{Evaluation and Benchmarks}\label{sec:eval}
 \begin{itemize}
     \item Automatic:
     \begin{itemize}
@@ -355,15 +326,26 @@
 \end{itemize}
 
 \section{Training Recipe}
-\subsection{Build tool interface, schemas, and shared memory (Planner/Executor/Verifier/Generator)}
-\subsection{Preprocess CORUM and split train/val/test}
-\subsection{Build multiplex graph environment and query operators}
-\subsection{Phase 0: general-knowledge tool pretraining (MyGene/GO/Reactome/KEGG tasks)}
-\subsection{SFT warm-start: tool calling + evidence-to-finding}
-\subsection{Offline preference dataset generation from CORUM-scored candidates}
-\subsection{DPO training (TRL) and ablations}
-\subsection{Online RL (PPO/GRPO-style) for long-horizon exploration}
-\subsection{Final evaluation: recovery, labels, summaries, efficiency}
+In this section, we present a recipe for end-to-end training of a mechanistic discovery model, covering dataset and environment construction in sections \ref{sec:tool-data}, \ref{sec:corum}, and \ref{sec:graph-data}, SFT warm-start training in sections \ref{sec:tool-pt} and \ref{sec:warm-start}, DPO training in sections \ref{sec:dpo-data} and \ref{sec:dpo-training}, online RL in section \ref{sec:online-rl}, and evaluation in section \ref{sec:final-eval}.
+
+
+\subsection{Build tool interface, schemas, and shared memory (Planner/Executor/Verifier/Generator)}\label{sec:tool-data}
+
+\subsection{Preprocess CORUM and split train/val/test}\label{sec:corum}
+
+\subsection{Build multiplex graph environment and query operators}\label{sec:graph-data}
+
+\subsection{Phase 0: general-knowledge tool pretraining (MyGene/GO/Reactome/KEGG tasks)}\label{sec:tool-pt}
+
+\subsection{SFT warm-start: tool calling + evidence-to-finding}\label{sec:warm-start}
+
+\subsection{Offline preference dataset generation from CORUM-scored candidates}\label{sec:dpo-data}
+
+\subsection{DPO training (TRL) and ablations}\label{sec:dpo-training}
+
+\subsection{Online RL (PPO/GRPO-style) for long-horizon exploration}\label{sec:online-rl}
+
+\subsection{Final evaluation: recovery, labels, summaries, efficiency}\label{sec:final-eval}
 
 \section{Discussion}
 \subsection{CORUM licensing}
