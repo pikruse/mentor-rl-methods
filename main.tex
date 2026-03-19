@@ -14,7 +14,7 @@
 \section{Introduction and Motivation}
 
 \subsection{Biological Interpretation as Mechanistic Discovery}
-Biological interpretation involves the development/discovery of mechanistic relationships between biological entities such as genes, proteins, RNA, and other molecular components. Interpretation is essential for discovering context-specific relationships and developing models of disease, phenotypes, pathways, and regulatory systems. In recent years, machine learning (ML) and artificial intelligence (AI) techniques such as iterative random forest (iRF) \cite{basu2018iterative, cliff2019high}, MENTOR \cite{}, and related approaches have accelerated biological research through the construction of biologically informed networks, which scientists explore to generate mechanistic and functional hypotheses.
+Biological interpretation involves the development/discovery of mechanistic relationships between biological entities such as genes, proteins, RNA, and other molecular components. Interpretation is essential for discovering context-specific relationships and developing models of disease, phenotypes, pathways, and regulatory systems. In recent years, machine learning (ML) and artificial intelligence (AI) techniques such as iterative random forest (iRF) \cite{basu2018iterative, cliff2019high}, MENTOR \cite{mentor}, and related approaches have accelerated biological research through the construction of biologically informed networks, which scientists explore to generate mechanistic and functional hypotheses.
 
 As these methods increase the resolution and scope of inferred networks, biological interpretation has become increasingly mediated by large, densely connected, multi-scale graph structures. To comprehensively examine these large biological networks and supporting databases, mechanistic exploration requires iterative querying and multi-step reasoning. Recent agentic interpretation systems \cite{eubiota} demonstrate that provenance-preserving retrieval and tool-mediated synthesis can yield high-fidelity mechanistic narratives, but the approach remains expensive and not fully optimized as a trainable policy.
 
@@ -32,36 +32,35 @@ By training a transformer-based agent with reinforcement learning across tool-us
 
 \subsection{Biological Network-Based Interpretation}
 \begin{itemize}
+\subsubsection{Protein Complexes as Mechanistic Ground Truth}
     \item Protein complexes as mechanistic ground truth
     \begin{itemize}
         \item CORUM: a benchmark set for mammalian protein complexes \cite{tsitsiridis2023corum}
         \item licensing constraints, split strategy
     \end{itemize}
 
-    \item Mechanistic discovery in systems biology
+\subsubsection{Mechanistic Discovery in Systems Biology}
     \begin{itemize}
         \item \cite{barabasi2004network}
         \item \cite{ideker2012differential}
         \item \cite{barabasi2011network}
     \end{itemize}
 
-    \item iRF and iRF-LOOP
+\subsubsection{Iterative Random Forest}
     \begin{itemize}
         \item \cite{basu2018iterative}
         \item \cite{cliff2019high}
     \end{itemize}
 
-    \item MENTOR and multiplex biological networks
-    \begin{itemize}
-        \item MENTOR (and multiplex integration across PPI, co-expression, TF-target, and other evidence layers)
-    \end{itemize}
+\subsubsection{Exploration of Multiplex Networks}
 
+\subsubsection{Agentic Gene Set Interpretation}
     \item Agentic gene set interpretation pipelines (tool-mediated synthesis)
     \begin{itemize}
         \item MENTOR-IA: provenance-preserving retrieval (gene metadata + GO/pathways + literature) and multi-agent synthesis
     \end{itemize}
 
-    \item Network propagation and diffusion methods (RWR)
+\subsubsection{Network Propagation and Diffusion Methods}
     \begin{itemize}
         \item \cite{kohler2008walking}
         \item \cite{vanunu2010associating}
@@ -69,14 +68,14 @@ By training a transformer-based agent with reinforcement learning across tool-us
         \item \cite{cowen2017network}
     \end{itemize}
 
-    \item Community detection and subgraph extraction
+\subsubsection{Community Detection and Subgraph Extraction}
     \begin{itemize}
         \item \cite{newman2004finding}
         \item \cite{blondel2008fast}
         \item \cite{fortunato2010community}
     \end{itemize}
 
-    \item Graph neural networks in biological modeling
+\subsubsection{Graph Neural Networks in Biological Modeling}
     \begin{itemize}
         \item \cite{kipf2016semi}
         \item \cite{hamilton2017inductive}
@@ -86,6 +85,7 @@ By training a transformer-based agent with reinforcement learning across tool-us
 
 \subsection{Transformer-Based Structured Reasoning}
 \begin{itemize}
+\subsubsection{Transformer Architectures and Scaling}
     \item Transformer architectures and scaling
     \begin{itemize}
         \item \cite{vaswani2017attention}
@@ -94,14 +94,14 @@ By training a transformer-based agent with reinforcement learning across tool-us
         \item \cite{hoffmann2022training}
     \end{itemize}
 
-    \item Emergent reasoning in transformers
+\subsubsection{Emergent Reasoning in Transformers}
     \begin{itemize}
         \item \cite{wei2022chain}
         \item \cite{kojima2022large}
         \item \cite{wang2022self}
     \end{itemize}
 
-    \item Tool-augmented LMs (ReAct, ToolFormer)
+\subsubsection{Tool-Augmented LMs}
     \begin{itemize}
         \item \cite{schick2023toolformer}
         \item \cite{yao2022react}
@@ -109,17 +109,18 @@ By training a transformer-based agent with reinforcement learning across tool-us
         \item \cite{patil2024gorilla}
     \end{itemize}
 
+\subsubsection{Modular Agentic Architectures with Verification and Shared Memory}
     \item Modular agentic architectures with verification and shared memory
     \begin{itemize}
         \item Eubiota-style Planner/Executor/Verifier/Generator decomposition; schema-first tools; traceable memory
     \end{itemize}
 
-    \item Retrieval-augmented and graph-augmented models (RAG, GraphRAG)
+\subsubsection{Retrievel-Augmented and Graph-Augmented Models}
     \begin{itemize}
         \item
     \end{itemize}
 
-    \item Limitations of LLMs in long-horizon structured reasoning
+\subsubsection{Limitations of LLMs in Long-Horizon Reasoning}
     \begin{itemize}
         \item
     \end{itemize}
@@ -127,22 +128,22 @@ By training a transformer-based agent with reinforcement learning across tool-us
 
 \subsection{Reinforcement Learning for Sequential Decision-Making}
 \begin{itemize}
-    \item Policy gradient methods (PPO)
+\subsubsection{Policy Gradient Methods}
     \begin{itemize}
         \item
     \end{itemize}
 
-    \item RL for language models (RLHF, GRPO, DPO)
+\subsubsection{RL for Language Models}
     \begin{itemize}
         \item
     \end{itemize}
 
-    \item RL for tool-use and planning agents
+\subsubsection{RL for Tool Use and Planning}
     \begin{itemize}
         \item outcome-driven, trajectory-level optimization (e.g., GRPO-style group rollouts for long-horizon tool use)
     \end{itemize}
 
-    \item RL in graph and combinatorial environments
+\subsubsection {RL in Graph and Combinatorial Environments}
     \begin{itemize}
         \item
     \end{itemize}
@@ -152,37 +153,23 @@ By training a transformer-based agent with reinforcement learning across tool-us
 Our proposed methodology is structured as follows: in Sections \ref{sec:agent_loop} and \ref{sec:task}, we present an iterative process for long-horizon exploration and formalize our mechanistic interpretation task. In Sections \ref{sec:data} and \ref{sec:mechanistic-summary}, we describe our dataset construction and environment creation process. In sections \ref{sec:training}, \ref{sec:rewards}, and \ref{sec:curriculum}, we outline our training pipeline, reward definitions, and curriculum construction. Finally, in section \ref{sec:eval}, we discuss our process for evaluating and benchmarking our model.
 
 \subsection{Agent Loop Formulation}\label{sec:agent_loop}
-\begin{itemize}
-    \item Formalize mechanistic graph exploration as an iterative agent loop with discrete decision points.
+We model mechanistic graph exploration as a sequential decision process executed by a single policy model with an internal self-verification step. The agent loop begins with the user providing a query, $q$, and, optionally, evidence $e^{\text{user}}$. Evidence can take the form of additional text context, seed genes, or a multiplex network. These inputs initialize the working interpretation $I_0$ and the structured state $S_0$
 
-    \item Adopt a modular loop (Planner/Executor/Verifier/Generator) to separate (i) action selection, (ii) schema-valid tool execution, (iii) evidence sufficiency checks, and (iv) grounded synthesis.
+For each decision point $t < t^{\text{max}}$, we define the current decision context as
 
-    \item Working model updates:
-    \begin{enumerate}
-        \item propose a hypothesis / subgoal
-        \item select a tool call (or calls)
-        \item interpret returned results
-        \item update structured state + working model
-    \end{enumerate}
+\[
+x_t = \{q, e^{\text{user}}, I_t, S_t\},
+\]
 
-    \item Structured state $s_t$ (used for verifiable rewards):
-    \begin{enumerate}
-        \item current seed set
-        \item candidate protein set
-        \item evidence edges / provenance (tool outputs, network paths)
-        \item predicted complex id (or none)
-        \item stop / continue decision
-    \end{enumerate}
+The agent will emit an action $a_t$, given the query, evidence, current interpretation, and current structured state. This action may be either a text-based planning/reasoning action, a runtime-based tool-calling action, or both. If the action contains a tool-calling step, the tool call will be executed via a deterministic runtime.
 
-    \item Model actions emitted in a machine-parsable schema (JSON):
-    \begin{itemize}
-        \item tool call + arguments (typed; validated)
-        \item proposed state update
-        \item mechanistic labels
-        \item short finding statement
-        \item stop/continue
-    \end{itemize}
-\end{itemize}
+ After the action is sampled from the policy and all deterministic tool calls are executed, a verification step takes place. Given the query, evidence, current interpretation, current structured state, and current action/tool outputs, the verifier policy updates the interpretation and structured state. Additionally, it provides a continuation decision $z_t \in \{\texttt{stop}, \texttt{continue}\}$ to indicate when the interpretation is completed.
+
+ The process is repea
+
+The working interpretation consists of four human-readable components:
+
+The structure state stores 
 
 \subsection{Task Outputs and Mechanistic Targets}\label{sec:task}
 \begin{itemize}
@@ -197,12 +184,11 @@ Our proposed methodology is structured as follows: in Sections \ref{sec:agent_lo
 \end{itemize}
 
 \subsection{Data, Resources, and Environment}\label{sec:data}
+Our dataset will be constructed from a combination of existing internal tool infrastructure, open-source data, and graph exploration environments. First, we will construct a tool and database access data subset, relying on existing internal agentic infrastructure and previously developed tools from the MENTOR-IA project. These tools include gene metadata, gene ontology (GO) annotations, and pathway membership information, retrieved via MyGene.info, KEGG, and Reactome. Additionally, we will include tools to access literature abstracts with EMBL-EBI and PubMed ID (PMID) retrieval tools. Using these tools, we will create a dataset of general-knowledge biology tasks, comprising both tool-enabled (open-book) and tool-disabled (closed-book) variants. Examples include retrieving the correct ensembl ID for a given gene name, returning the correct GO annotations for a given gene or gene set, and returning the relevant genes or pathways detailed in an abstract. This dataset will be used for warm-start SFT.
+
+After construction of the warm-start SFT dataset, we will create a CORUM-grounded training corpus that will   
+
 \begin{itemize}
-    \item Tool and database access (from existing agentic infrastructure):
-    \begin{itemize}
-        \item Gene metadata + GO + pathway membership via MyGene.info-style APIs
-        \item Literature abstracts via EMBL-EBI/PMID-based retrieval; abstract ranking via embedding/TF--IDF relevance scoring
-    \end{itemize}
 
     \item CORUM-grounded training corpus:
     \begin{itemize}
