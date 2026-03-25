@@ -340,24 +340,179 @@ while the target remains $C = C_{\text{module}}$. the CORUM-grounded corpus prov
 \subsubsection{Graph Environment and Runtime}
 Each CORUM-derived task instance is paired with a graph environment defined over the same canonical gene universe as the in-house multiplex, of which CORUM is a labeled subset. The sampled input set $C^{\text{in}}$ initializes the agent's graph anchors, while the hidden target $C$ and associated annotations define the supervisory signal. For negative examples, noise genes are sampled from the full multiplex gene universe rather than only from CORUM, reducing the likelihood of generating an accidentally coherent module.
 
-To interface the graph environment with the training pipeline, we use a native C++ multiplex runtime exposed to Python through pybind11 \cite{pybind11}. Training, rollout, and optimization code are implemented in Python, while graph storage and graph operations are implemented in C++ for efficient execution on large multiplexes. Multiplex networks are stored in either custom binary or HDF5 format, depending on scale and interoperability requirements.
+To interface the graph environment with the training pipeline, we use a native C++ \cite{cpp} multiplex runtime exposed to Python through pybind11 \cite{pybind11}. Training, rollout, and optimization code are implemented in Python \cite{python}, while graph storage and graph operations are implemented in C++ for efficient execution on large multiplexes. Multiplex networks are stored in either custom binary or HDF5 format, depending on scale and interoperability requirements.
 
-The runtime reuses a set of optimized multiplex functions developed as part of the MENTOR \cite{mentor} and MENTOR-IA projects \cite{}. Core operators include neighborhood retrieval, shortest-path search, random walk with restart on both monoplex and multiplex views, and subgraph induction. These operators provide the primary graph-facing actions available to the agent during exploration.
+The runtime uses a set of optimized multiplex functions developed as part of the MENTOR \cite{mentor} and MENTOR-IA projects \cite{}. Core operators include neighborhood retrieval, shortest-path search, random walk with restart on both monoplex and multiplex views, and subgraph induction. These operators provide the primary graph-facing actions available to the agent during exploration.
 
 All runtime operators return both graph objects and provenance metadata. In addition to nodes, edges, and scores, each returned object records the relevant layer identity, operator parameters, and source information needed to trace the final interpretation back to the graph evidence used to construct it. To ensure consistency across serialized multiplex files, C++ runtime objects, Python wrappers, and logged training artifacts, all nodes are represented in a single canonical identifier space and all edges are referenced using deterministic, layer-aware identifiers.
 
 \subsubsection{Trajectory and Mechanistic Summary Construction}
+
+\textbf{Episode Initialization}
+Each sample CORUM task instance $(C^\text{in}, C, C_\text{type}, y_{mech})$ is converted into one or more exploration episodes. For each episode, we sample
 \begin{itemize}
-    \item how episodes are rolled out from a sampled CORUM task
-    \item how tool calls/observations are logged
-    \item how per-step findings are extracted
-    \item how a final mech. summary is produced
+    \item a user query template conditioned on task type
+    \item an evidence mode (genes only, genes + text context, genes + localization hint, genes + pathway hint, genes + literature snippet, or genes + multiplex context)
+    \item a difficulty setting (noise level, number of missing genes, exploration budget).
 \end{itemize}
 
-\subsubsection{Derived Training Datasets}
+These fields define the user-facing query $q$ and optional evidence $e^\text{user}$. The initial structured state $S_0$ is constructed deterministically from the sampled input set and user evidence. It contains:
+
 \begin{itemize}
-    \item SFT Trajectory records
-    \item DPO Preference pairs
+    \item the user-provided anchors,
+    \item an initial relationship status of \texttt{unresolved},
+    \item an initial candidate group containing $C^\text{in}$,
+    \item empty evidence/provenance records,
+    \item empty mechanistic labels,
+    \item and the full remaining budget.
+\end{itemize}
+
+The initial interpretation $I_0$ is then rendered from $q, e^\text{user}$, and $S_0$, with an unresolved mechanistic claim, a summary of user-provided evidence, and an initial subgoal.
+ 
+\textbf{Bootstrap Trajectory Generation}
+Before the model is strong enough to generate trajectories autonomously, episodes are produced by a scripted rollout policy. At each turn, the scripted policy
+\begin{itemize}
+    \item generates a set of valid candidate actions based on the current task type and structured state (samples from a list),
+    \item executes tool calls in the graph runtime,
+    \item updates resulting candidate next states,
+    \item scores each candidate next state against the known target using deterministic criteria,
+    \item and selects the highest-scoring candidate as the logged next transition.
+\end{itemize}
+
+Task-specific action libraries are used;
+\begin{itemize}
+    \item recovery
+    \begin{itemize}
+        \item neighbors
+        \item RWR
+        \item subgraphing
+        \item annotation lookup
+    \end{itemize}
+
+    \item explanation
+    \begin{itemize}
+        \item annotation lookup
+        \item pathway retrieval
+        \item lit retrieval
+        \item summary construction
+    \end{itemize}
+
+    \item refinement
+    \begin{itemize}
+        \item graph expansion
+        \item connectivity filtering???
+        \item support-based pruning???
+    \end{itemize}
+
+    \item no single mechanism
+    \begin{itemize}
+        \item connectivity checks
+        \item annotation consensus checks
+        \item graph partitioning
+        \item insufficient-support termination
+    \end{itemize}
+\end{itemize}
+
+As training progresses, we will augment these scripted trajectories with model-generated rollouts.
+
+\textbf{Turn-Level Logging}
+Each episode is logged as a sequence of turn records. Each record contains:
+\begin{itemize}
+    \item the current interpretation $I_t$,
+    \item the current structured state $S_t$,
+    \item the reasoning step $r_t$,
+    \item the tool action $a_t$,
+    \item the tool output $o_t$,
+    \item the updated interpretation $I_{t+1}$,
+    \item the updated structured state $S_{t+1}$
+    \item the continuation decision $z_t$.
+\end{itemize}
+
+\textbf{Per-Step Finding Extraction}
+Each logged turn is converted into a short finding record dervied from:
+\begin{itemize}
+    \item the tool output $o_t$,
+    \item the structured-state change $S_t \rightarrow S_{t+1}$,
+    \item the continuation decision $z_t$,
+\end{itemize}
+
+Each finding contains:
+\begin{itemize}
+    \item the evidence retrieved
+    \item the change in the current hypothesis
+    \item whether the update supports, revises, or weakens the interpretations
+\end{itemize}
+
+Findings are initially produced deterministically with a template. After the model stabilizes on evidence-to-finding SFT, model-generated findings may be added.
+
+\textbf{Mechanistic Summary Construction}
+The final mechanistic summary is constructed from
+\begin{itemize}
+    \item the terminal interpretation $I_T$,
+    \item the terminal structured state $S_T$,
+    \item the ordred list of per-step findings
+\end{itemize}
+
+Summaries are first produced from deterministic templates applied to the final state and evidence log. After early SFT training stabilizes, model-generated summaries may be introduced as an auxiliary supervised target.
+
+\textbf{Scalable Episode Generation}
+Each CORUM module can produce many episode variants by varying
+\begin{itemize}
+    \item task type,
+    \item query template,
+    \item evidence mode,
+    \item noise level,
+    \item difficulty,
+    \item budget,
+\end{itemize}
+
+Because each trajectory yields multiple turn-level records and summary records, a single sampled module can generated many supervised training examples.
+
+\subsubsection{Derived Training Datasets}
+
+\textbf{SFT Trajectory Records}
+Logged episodes are converted into supervised records in three views.
+\begin{enumerate}
+    \item Action-generation records: train the model to produce an action given context
+    \begin{itemize}
+        \item input: current decision context $D_t$
+        \item target: next reasoning step and tool action $(r_t, a_t)$
+    \end{itemize}
+
+    \item Verification/update records: train the verifier mode of the policy
+    \begin{itemize}
+        \item input: $D_t, r_t, a_t, o_t$
+        \item output: $I_{t+1}, S_{t+1}, z_t$
+    \end{itemize}
+
+    \item Terminal rendering records: train the model to render a structured hypothesis into a readable mechanistic answer as an auxiliary supervised task
+    \begin{itemize}
+        \item input: final evidence log and terminal structured state $S_T$
+        \item output: final human-readable interp $I_T$
+    \end{itemize}
+\end{enumerate}
+
+\textbf{DPO Preference Pairs}
+Preference pairs are constructed from selected decision points within logged episodes. From each point:
+\begin{itemize}
+    \item choose the current context $D_t$
+    \item generate multiple candidate next-step outputs
+    \item execute any proposed tool calls
+    \item update the resulting candidate next states
+    \item score the candidates using deterministic CORUM-based criteria
+    \item rank them,
+    \item convert the ranking into $\{prompt, chosen, rejected\}$ examples.
+\end{itemize}
+
+Initial candidates are generated from the scripted action libraryr and templated outputs. As the model improves, add model-generated next steps to reduce distribution mistmatch between preference construction/deployment-time behavior.
+
+Preference ranking criteria include:
+\begin{itemize}
+    \item tool validity
+    \item complex recovery improvement
+    \item mechanistic label agreement
+    \item groundedness of the updated hypothesis
+    \item efficiency penalties
 \end{itemize}
 
 \subsection{Training Pipeline}
