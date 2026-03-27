@@ -289,7 +289,7 @@ C^{\text{in}} = C_{\text{module}} \setminus G_{\text{drop}},
 \]
 while the target remains $C = C_{\text{module}}$.
 
-In the refinement case, noise genes are sampled from the full CORUM gene universe excluding the selected module, and grouped into $G_{\text{add}}$. The input set is then defined as
+In the refinement case, noise genes are sampled from the full multiplex universe excluding the selected module, and grouped into $G_{\text{add}}$. The input set is then defined as
 \[
 C^{\text{in}} = C_{\text{module}} \cup G_{\text{add}},
 \]
@@ -469,11 +469,16 @@ where $\lambda$ is the lookahead discount rate.
 Each selected trajectory is logged as a sequence of turn records, from which we render short per-step findings and a final mechanistic summary. These artifacts are then converted into SFT trajectory examples, evidence-to-finding records, and DPO preference pairs for the downstream training pipeline. Additionally, scored trajectories can be utilized for policy gradient optimization, such as PPO or GRPO.
 
 \subsection{Training Pipeline}
-\subsubsection{Warm-Start SFT}
+We propose a training pipeline closely aligns with standard model post-training pipelines. First, we utilize supervised fine-tuning for general biological knowledge and tool calling. We continue training with DPO on stepwise interpretation tree comparisons. Finally, we promote novel exploration over long-horizon tasks with policy gradient optimization.
+
+\subsubsection{Warm-Start SFT}\label{sec:warmstart}
+We first train our policy model with warm-start SFT using the closed-book dataset outlined in Section \ref{sec:data}. We will train our policy model on OLCF's Frontier Supercomputer \cite{}, utilizing slurm \cite{} for job scheduling, huggingface \cite{} and TRL \cite{} for weight updating, DeepSpeed ZeRO-3 for model parallelism \cite{}, Low-Rank Adaptation for parameter-efficient fine-tuning \cite{}, Weights and Biases \cite{} for tracking convergence, and gpt-oss-120b \cite{} as our base policy. We will utilize an early stopping checkpointing to prevent model overtraining.
 
 \subsubsection{Tool-Call and Evidence-to-Finding SFT}
+We continue the supervised fine-tuning stage by adding open-book tool calling examples and evidence-to-finding examples to our data mixture. We initialize our policy from the warm-start SFT checkpoint with the lowest loss, and we utilize the same pipeline for model training.
 
 \subsubsection{DPO Training}
+After training our model via SFT, we initi 
 
 \subsubsection{Online RL for Long-Horizon Exploration}
 
