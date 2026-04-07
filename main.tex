@@ -23,19 +23,19 @@
 \section{Introduction and Motivation}
 
 %\subsection{Biological Interpretation as Mechanistic Discovery}
-Biological interpretation involves the development/discovery of mechanistic relationships between biological entities such as genes, proteins, RNA, and other molecular components. Interpretation is essential for discovering context-specific relationships and developing models of disease, phenotypes, pathways, and regulatory systems. In recent years, machine learning (ML) and artificial intelligence (AI) techniques such as iterative random forest (iRF) \cite{basu2018iterative, cliff2019high}, MENTOR \cite{mentor}, and related approaches have accelerated biological research through the construction of biologically informed networks, which scientists explore to generate mechanistic and functional hypotheses.
+Biological interpretation involves the development/discovery of mechanistic relationships between biological entities such as genes, proteins, RNA, and other molecular components. Interpretation is essential for discovering context-specific relationships and developing models of disease, phenotypes, pathways, and regulatory systems. Recently, machine learning (ML) and artificial intelligence (AI) techniques such as iterative random forest (iRF) \cite{basu2018iterative, cliff2019high}, MENTOR \cite{mentor}, and related approaches have accelerated biological research through the construction of biologically informed networks, which scientists explore to generate mechanistic and functional hypotheses.
 
 As these methods increase the resolution and scope of inferred networks, biological interpretation has become increasingly mediated by large, densely connected, multi-scale graph structures. To comprehensively examine these large biological networks and supporting databases, mechanistic exploration requires iterative querying and multi-step reasoning. Recent agentic interpretation systems \cite{eubiota} demonstrate that provenance-preserving retrieval and tool-mediated synthesis can yield high-fidelity mechanistic narratives, but the approach remains expensive and not fully optimized as a trainable policy.
 
 %\subsection{Biological Interpretation is Bottlenecked by Scale, both in Human Cognition and Frontier Model Cost}
-Although ML/AI methods have refined mechanistic focus into groups of functionally related clades of genes, these clades can still be massive and intractable for individual researchers to systematically explore. Additionally, most research emphasizes a deep-but-narrow focus on a small subset of functionally related genes, which can overlook broader, yet biologically meaningful, network context, particularly in highly interactive systems such as living organisms. As biological networks grow in size and complexity, the combinatorial space of possible multi-hop interactions expands rapidly, while human interpretive capacity remains fixed.
+Although ML/AI methods have refined mechanistic focus into groups of functionally related clades of genes, these clades can still be massive and intractable for individual researchers to systematically explore. Additionally, most research emphasizes a deep-but-narrow focus on a small subset of functionally related genes, which can overlook broader, yet biologically meaningful, network context, particularly in highly interactive systems such as living organisms. As biological networks grow in complexity, the combinatorial space of possible multi-hop interactions expands rapidly, while human interpretive capacity remains fixed.
 
-While Large Language Models (LLMs) can synthesize large volumes of information, frontier inference cost scales with exploration length and reasoning depth, limiting agentic deployment for long-horizon network traversal. This mismatch creates a scaling limit in biological mechanistic interpretation: rich relational structures can be computed, but downstream synthesis remains constrained by human bandwidth and model cost. Consequently, the speed, breadth, and contextual depth of mechanistic discovery are limited, particularly for complex traits, polygenic diseases, and multi-layer regulatory systems.
+While large language models (LLMs) can synthesize large volumes of information, frontier inference cost scales with exploration length and reasoning depth, limiting agentic deployment for long-horizon network traversal. This mismatch creates a scaling limit in biological mechanistic interpretation: rich relational structures can be computed, but downstream synthesis remains constrained by human bandwidth and model cost. Consequently, the speed, breadth, and contextual depth of mechanistic discovery are limited, particularly for complex traits, polygenic diseases, and multi-layer regulatory systems.
 
 %\subsection{AI-Guided Reasoning to Extend Mechanistic Interpretation Beyond Human Scale}
 Open-source LLMs present an opportunity to aid scientists in mechanistic discovery tasks without being cost prohibitive. Recent developments in agent-based systems enable models to invoke deterministic tools with structured interfaces, substantially reducing hallucination and enabling provenance-preserving exploration. We propose \textbf{MENTOR-RL}, a reasoning agent trained on human-annotated biological ground truth and verifiable interaction objectives, enabling scalable mechanistic exploration without reliance on proprietary models.
 
-By training a transformer-based agent with reinforcement learning across tool-use tasks and contextual levels of biological network data, we aim to produce a model that can traverse complex networks, synthesize \textit{multi-hop} mechanistic hypotheses, and integrate both local functional structure and global topological context. Leveraging open-source model offerings allows local deployment, with training cost amortized across many exploration sessions. Rather than replacing scientific judgment, MENTOR-RL extends researcher interpretive bandwidth, enabling broader, faster, and more context-aware mechanistic discovery.
+By training a transformer-based agent with reinforcement learning across tool-use tasks and contextual levels of biological network data, we aim to produce a model that can traverse complex networks, synthesize \textit{multi-hop} mechanistic hypotheses, and integrate both local functional structure and global topological context. Leveraging open-source model offerings allows local deployment, with training costs amortized across many exploration sessions. Rather than replacing scientific judgment, MENTOR-RL extends researcher interpretive bandwidth, enabling broader, faster, and more context-aware mechanistic discovery.
 
 \section{Background and Related Work}
 
@@ -122,7 +122,7 @@ Several prior works have noted emergent reasoning capabilities in transformer mo
 \subsubsection{Modular Agentic Architectures with Verification and Shared Memory}
     \item Modular agentic architectures with verification and shared memory
     \begin{itemize}
-        \item Eubiota-style Planner/Executor/Verifier/Generator decomposition; schema-first tools; traceable memory
+        \item Eubiota style Planner/Executor/Verifier/Generator decomposition; schema-first tools; traceable memory
     \end{itemize}
 
 \subsubsection{Retrieval-Augmented and Graph-Augmented Models}
@@ -150,7 +150,7 @@ Several prior works have noted emergent reasoning capabilities in transformer mo
 
 \subsubsection{RL for Tool Use and Planning}
     \begin{itemize}
-        \item outcome-driven, trajectory-level optimization (e.g., GRPO-style group rollouts for long-horizon tool use)
+        \item outcome-driven, trajectory-level optimization (e.g., GRPO style group rollouts for long-horizon tool use)
     \end{itemize}
 
 \subsubsection {RL in Graph and Combinatorial Environments}
@@ -173,7 +173,7 @@ D_t = (q, e^{\text{user}}, I_t, S_t).
 
 Given $D_t$, the agent emits an action consisting of a textual reasoning step $r_t$ and an optional tool action $a_t$. The reasoning step specifies the current subgoal or interpretation update, while the tool action specifies a runtime-executable call. If a tool action is emitted, it is executed by a deterministic runtime $\varepsilon$; otherwise, the observation is empty.
 
-After the action is produced and any deterministic tool calls are executed, the same policy enters a verification mode. Conditioned on the query, user-provided evidence, the current interpretation, the current structured state, and the current reasoning/action outputs, the verifier updates the interpretation and structured state. It also emits a continuation decision
+After the action is produced and any deterministic tool calls are executed, the same policy enters a verification mode. Conditioned on the query, user-provided evidence, the current interpretation, the current structured state, and the current reasoning/action outputs, the verifier updates the interpretation and structured state. It also emits a continuation decision,
 \[
 z_t \in \{\texttt{continue}, \texttt{revise}, \texttt{stop}\},
 \]
@@ -211,6 +211,13 @@ where $r_t$ is the agent's textual reasoning or subgoal, $a_t$ is the optional t
 \State \Return final interpretation $I_T$ and structured state $S_T$
 \end{algorithmic}
 \end{algorithm}
+
+\begin{figure}[htb!]
+    \centering
+    \includegraphics[width=\linewidth]{img/agent_loop.pdf}
+    \caption{The \textsc{MENTOR-RL} agent loop.}
+    \label{fig:agent-loop}
+\end{figure}
 
 \subsubsection{Working Interpretation}
 The working interpretation $I_t$ is the human-readable form of the current mechanistic hypothesis and contains:
@@ -439,8 +446,8 @@ Given a sampled task and initialized state, we sample multiple action candidates
 
 \begin{figure}[h!]
     \centering
-    \includegraphics[width=0.75\linewidth]{img/sharedprefixsketch.png}
-    \caption{A sketch of the shared prefix generation tree.}
+    \includegraphics[width=\linewidth]{img/trajectory_gen.pdf}
+    \caption{The shared prefix generation tree.}
     \label{fig:shared-prefix}
 \end{figure}
 
@@ -469,7 +476,7 @@ where $\lambda$ is the lookahead discount rate.
 Each selected trajectory is logged as a sequence of turn records, from which we render short per-step findings and a final mechanistic summary. These artifacts are then converted into SFT trajectory examples, evidence-to-finding records, and DPO preference pairs for the downstream training pipeline. Additionally, scored trajectories can be utilized for policy gradient optimization, such as PPO or GRPO.
 
 \subsection{Training Pipeline}
-We propose a training pipeline closely aligns with standard model post-training pipelines. First, we utilize supervised fine-tuning for general biological knowledge and tool calling. We continue training with DPO on stepwise interpretation tree comparisons. Finally, we promote novel exploration over long-horizon tasks with policy gradient optimization.
+We propose a training pipeline that closely aligns with standard model post-training pipelines. First, we utilize supervised fine-tuning for general biological knowledge and tool calling. We continue training with DPO on stepwise interpretation tree comparisons. Finally, we promote novel exploration over long-horizon tasks with policy gradient optimization.
 
 \subsubsection{Warm-Start SFT}\label{sec:warmstart}
 We first train our policy model with warm-start SFT using the closed-book dataset outlined in Section \ref{sec:data}. We will train our policy model on OLCF's Frontier Supercomputer \cite{}, utilizing slurm \cite{} for job scheduling, huggingface \cite{} and TRL \cite{} for weight updating, DeepSpeed ZeRO-3 for model parallelism \cite{}, Low-Rank Adaptation for parameter-efficient fine-tuning \cite{}, Weights and Biases \cite{} for tracking convergence, and gpt-oss-120b \cite{} as our base policy. We will utilize an early stopping checkpointing to prevent model overtraining.
@@ -505,7 +512,7 @@ After training our model via SFT, we initi
 \subsection{Evaluation and Benchmarks}\label{sec:eval}
 \subsubsection{CORUM Holdout Evaluation}
 \begin{itemize}
-    \item recovery F1 / jaccard / precision@k / recall@k
+    \item recovery F1 / Jaccard / precision@k / recall@k
     \item mechanistic label accuracy
     \item noisy refinement performance
     \item no-mechanism detection
@@ -518,10 +525,9 @@ After training our model via SFT, we initi
 \end{itemize}
 
 \subsubsection{Blind Comparative Evaluation}
-\begin{itemize}
-    \item blind win-rate/pairwise preference testing
-    \item compare several models/training stages
-\end{itemize}
+In conjunction with empirical validation, which measures model accuracy, we will conduct blind comparative evaluations to measure expert domain scientists' model preferences. First, we will perform an inter-model preference test, supplying interpretation outputs from \textsc{Mentor-RL}, GPT-5 \cite{gpt5}, gpt-oss-120b \cite{gpt-oss}, LLaMA 4 \cite{llama4}, Kimi K2 \cite{kimik2}, and Nemotron 3 Super \cite{nemotron3}. We will provide \textbf{NUMBER OF EXAMPLES} domain experts with paired samples containing \textsc{Mentor-RL} outputs and outputs from another randomly selected model. We will then ask scientists to indicate their preferred interpretation, and with this information, we will calculate the proportion of \textsc{Mentor-RL} outputs that are preferred compared to other models.
+
+After conducting inter-model preference testing, we will perform intra-model preference testing to compare preferences for different model checkpoints. Using the same protocol described for inter-model comparative evaluation, we will compare the base, SFT, DPO, and PPO-trained \textsc{Mentor-RL} checkpoints. Blind comparative testing will allow us to evaluate model characteristics such as style, tone, and concision that are not easily evaluable with empirical metrics.
 
 \subsubsection{Efficiency and Ablations}
 \begin{itemize}
