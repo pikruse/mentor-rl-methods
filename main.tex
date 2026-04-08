@@ -8,6 +8,7 @@
 \usepackage{array}
 \usepackage{appendix}
 \usepackage[T1]{fontenc}
+\usepackage{amsmath}
 
 \newcolumntype{Y}{>{\raggedright\arraybackslash}X}
 
@@ -449,28 +450,33 @@ Given a sampled task and initialized state, we sample multiple action candidates
     \includegraphics[width=\linewidth]{img/trajectory_gen.pdf}
     \caption{The shared prefix generation tree.}
     \label{fig:shared-prefix}
-\end{figure}
+\end{figure} 
 
-\subsubsection{Branch Ranking, Preference Mining, and Selection}\label{sec:pref-score}
-Each candidate branch is assigned a composite value consisting of a local mechanistic score and an optional short lookahead term to predict the scores of future continuations. These scores are used to mine same-prefix DPO pairs and to select the continuation branch for the logged trajectory. We define the local mechanistic score as
+\subsubsection{Branch Ranking, Preference Mining, and Selection}\label{sec:branch-ranking}
+Each candidate branch is assigned a deterministic local score computed from the structured state, runtime outputs, and hidden CORUM targets. These local scores are used to rank same-prefix candidates, mine DPO preference pairs, and select the continuation branch for the logged trajectory. We defer the formal score definitions to Section \ref{sec:rewards}.
 
-\[
-s^{local} = ,
-\]
+\subsection{Preference Scoring and Reward Design}
+\subsubsection{Design Principles and Scoreable Objects}
+We define all training-time scores over structured state transitions, deterministic runtime metadata, and hidden CORUM-derived targets rather than textual reasoning. This design choice keeps scoring reproducible, machine-parseable, and scalable, while avoiding dependence on human judges or semantic evaluation of natural-language trajectories.
 
-where . We define the lookahead score as
+\subsubsection{Deterministic Local Branch scoring for DPO}
+We define local branch scoring for DPO as 
 
-\[
-s^{future} =, 
-\]
+\begin{equation}\label{eqn:local-reward}
+    s^{local}_{t,i,j} = w_{s} s_{schema} + w_c \Delta s_{complex} + w_m \Delta s_{mech} - w_e p_{eff},
+\end{equation}
 
-with . Together, a weighted combination of these scores form the selection score
 
-\[
-\hat q = s^{local} + \lambda s^{future},
-\]
+which calculates a composite score from schema compliance, change in complex membership, change in mechanism accuracy, and an efficiency penalty. Individual scoring contributions are controlled with user-defined weights $w$. This local score is used only for same-prefix branch comparison and continuation selection during DPO trajectory synthesis.
 
-where $\lambda$ is the lookahead discount rate.
+\subsubsection{Terminal Reward Decomposition for GRPO}
+Unlike DPO, which compares local same-prefix branches, policy gradient methods require a scalar reward for a completed rollout. We therefore define a terminal reward over the final structured state and trajectory log using the same scoring components: final complex recovery, final mechanistic-label match, schema-valid termination, and trajectory-level efficiency penalties. Therefore, we define our terminal reward as 
+
+\begin{equation}\label{eqn:terminal-reward}
+    R_T = w_{s} s^{T}_{complex} + w_{c} \Delta s^{T}_{complex} + w_m \Delta s^{T}_{mech} - w_e p^{T}_{eff}.   
+\end{equation}
+
+\subsubsection{Pair Construction, Normalization, and Filtering}
 
 \subsubsection{Mechanistic Rendering and Training Outputs}
 Each selected trajectory is logged as a sequence of turn records, from which we render short per-step findings and a final mechanistic summary. These artifacts are then converted into SFT trajectory examples, evidence-to-finding records, and DPO preference pairs for the downstream training pipeline. Additionally, scored trajectories can be utilized for policy gradient optimization, such as PPO or GRPO.
@@ -479,38 +485,52 @@ Each selected trajectory is logged as a sequence of turn records, from which we 
 We propose a training pipeline that closely aligns with standard model post-training pipelines. First, we utilize supervised fine-tuning for general biological knowledge and tool calling. We continue training with DPO on stepwise interpretation tree comparisons. Finally, we promote novel exploration over long-horizon tasks with policy gradient optimization.
 
 \subsubsection{Warm-Start SFT}\label{sec:warmstart}
-We first train our policy model with warm-start SFT using the closed-book dataset outlined in Section \ref{sec:data}. We will train our policy model on OLCF's Frontier Supercomputer \cite{}, utilizing slurm \cite{} for job scheduling, huggingface \cite{} and TRL \cite{} for weight updating, DeepSpeed ZeRO-3 for model parallelism \cite{}, Low-Rank Adaptation for parameter-efficient fine-tuning \cite{}, Weights and Biases \cite{} for tracking convergence, and gpt-oss-120b \cite{} as our base policy. We will utilize an early stopping checkpointing to prevent model overtraining.
+We first train our policy model with warm-start SFT using the closed-book dataset outlined in Section \ref{sec:data}. We will train our policy model on OLCF's Frontier Supercomputer \cite{}, utilizing slurm \cite{} for job scheduling, huggingface \cite{} and TRL \cite{} for weight updating, DeepSpeed ZeRO-3 for model parallelism \cite{}, Low-Rank Adaptation for parameter-efficient fine-tuning \cite{}, Weights and Biases \cite{} for tracking convergence, and gpt-oss-120b \cite{gpt-oss} as our base policy. We will utilize early stopping checkpointing to prevent model overtraining.
 
 \subsubsection{Tool-Call and Evidence-to-Finding SFT}
 We continue the supervised fine-tuning stage by adding open-book tool calling examples and evidence-to-finding examples to our data mixture. We initialize our policy from the warm-start SFT checkpoint with the lowest loss, and we utilize the same pipeline for model training.
 
 \subsubsection{DPO Training}
-After training our model via SFT, we initi 
+After training our model via SFT, we will utilize its learned domain knowledge and tool calling capabilities to perform DPO training. We will utilize examples generated with the trajectory construction methods specified in \ref{sec:shared-prefix} to create paired preference data. Trajectories will be scored using the functions defined in Section \ref{sec:pref-score}; the highest-scoring trajectory will be used as the preferred candidate, while either the lowest-scoring median-scoring trajectories will be utilized as the dispreffered candidate. Model weights will be optimized using the DPO objective function \cite{dpo}:
+
+\[
+\mathcal{L}_{\text{DPO}}(\pi_\theta; \pi_{\text{ref}}) = -\mathbb{E}_{(x, y_w, y_l) \sim \mathcal{D}} \left[ \log \sigma \left( \beta \log \frac{\pi_\theta(y_w | x)}{\pi_{\text{ref}}(y_w | x)} - \beta \log \frac{\pi_\theta(y_l | x)}{\pi_{\text{ref}}(y_l | x)} \right) \right].
+\]
+
+Additionally, during training, we will re-generate trajectories with new, trained model checkpoints to improve our model's generated preference data. This will allow us to continue making model improvements even after scoring is optimized on our initial dataset.
 
 \subsubsection{Online RL for Long-Horizon Exploration}
+After trained with DPO, we will implement a final GRPO stage for long-horizon exploration. Unlike DPO, GRPO requires no annotated trajectories; rather, optimization by calculating the advantage of an output relative to the rollout group $\{o_1, o_2, \dots, o_G\}$ using the function
 
-\subsection{Preference Scoring and Reward Design}
-\subsubsection{Preference Scoring for DPO}
-\begin{itemize}
-    \item tool validity 
-    \item change in complex recovery
-    \item mechanistic label match
-    \item groundedness
-    \item efficiency penalties
-\end{itemize}
+\begin{multline*}
+    \mathcal{J}_{GRPO} = \mathbb{E}[q \sim P(Q), \{o_i\}_{i=1}^{G} \sim \pi_{\theta_{old}}(O\mid q)] \\
+    \frac{1}{G} \sum_{i=1}^{G}\frac{1}{\mid o_i \mid} \sum_{t=1}^{\mid o_i \mid} \Bigg \{ \text{min} \Big [ \frac{\pi_\theta (o_{i,t}\mid q, o_{i, <t})}{\pi_{\theta_{old}}(o_{i,t}\mid q, o_{i, <t})} \hat A_{i,t} \text{clip} \Big( \frac{\pi_\theta (o_{i,t}\mid q, o_{i, <t})}{\pi_{\theta_{old}}(o_{i,t}\mid q, o_{i, <t})}, 1 - \varepsilon, 1 + \varepsilon \Big) \hat A_{i,t} \Big] \\
+    - \beta \mathbb{D}_{KL} [\pi_\theta \mid\mid \pi_{re}] \Bigg \},
+\end{multline*}
 
-\subsubsection{Reward Decomposition for PPO/GRPO}
-\begin{itemize}
-    \item query validity/tool discipline
-    \item complex recovery
-    \item mechanistic interpretation
-    \item topological/contextual rewards
-\end{itemize}
+where 
+
+\[
+\hat A_{i,t} = \tilde{r}_i  = \frac{R^{T}_i - \text{mean}(R^{T})}{\text{std}(R^{T})}
+\]
+
+By foregoing structured, annotated preference pairs, GRPO promotes novel exploration for problem solving. We aim to utilize this policy gradient method to prevent mode collapse in exploration trajectories and reinforce full coverage of the exploration space.
 
 \subsection{Curriculum and Optimization Strategy}
+We will employ a training curriculum throughout the optimization process, scaling problem difficulty with model performance. 
+
+During the SFT stage we will scale difficulty by moving from closed-book biological questions to open-book biological questions that require tool use. This promotes learning biological understanding first, and then moving to structured, schema-respectiving tool calling tasks second.
+
+After training a joint closed- and open- book SFT checkpoint, we will scale difficulty for DPO pairs through scoring differences and trajectory length. First, we will train on preferences between local pairs with the same shared prefix, marking our preferred candidate as the local example with the highest composite reward score (Equation \ref{eqn:local-reward}) and our dispreferred candidate as the local example with the lowest reward score. After our loss converges on these examples, we will increase difficulty changing our dispreferred examples to those with the median reward score from all candidates. If this task is trivial, we can continue to modulate difficulty by increasing the reward scores of dispreferred candidates.
+
+Finally, during long-horizon reinforcement learning, we can scale difficulty by 
 
 \subsection{Evaluation and Benchmarks}\label{sec:eval}
 \subsubsection{CORUM Holdout Evaluation}
+We will use several metrics to evaluate the effectiveness of our model empirically. Each metric can be calculated by parsing the model's terminal structured state, allowing for scalable evaluation of our checkpoints. All evaluations will be conducted on a held out group of CORUM complex examples.
+
+First, we will evaluate complex recovery with four metrics: recovery F1, Jaccard index, precision@k, and recall@k. 
+
 \begin{itemize}
     \item recovery F1 / Jaccard / precision@k / recall@k
     \item mechanistic label accuracy
@@ -519,10 +539,7 @@ After training our model via SFT, we initi
 \end{itemize}
 
 \subsubsection{Novel-Domain Evaluation}
-\begin{itemize}
-    \item mentor-style eval on new experimental data
-    \item assess biological plausibility and mechanism quality outside CORUM
-\end{itemize}
+In addition to empirical evaluation using CORUM complexes as ground truth, we will utilize \textsc{Mentor} to conduct evaluations on novel experimental data. Current versions of the \textsc{Mentor} pipeline significance measures for gene modules yield a ground truth for complexes outside the mammalian protein realm. We will use previously derived experimental data, such as \textbf{NAME DATATYPES} as our ground truth. Because these examples are derived \textsc{Mentor} results on real experimental data, this process will allow us to assess the performance of \textsc{Mentor-RL} on examples outside of the curated CORUM universe. As such, we will gain a better understanding of the strengths and limitations of \textsc{Mentor-RL} on out-of-distribution, real-world data, while still having expert and algorithm-verified ground truth examples to compare to.
 
 \subsubsection{Blind Comparative Evaluation}
 In conjunction with empirical validation, which measures model accuracy, we will conduct blind comparative evaluations to measure expert domain scientists' model preferences. First, we will perform an inter-model preference test, supplying interpretation outputs from \textsc{Mentor-RL}, GPT-5 \cite{gpt5}, gpt-oss-120b \cite{gpt-oss}, LLaMA 4 \cite{llama4}, Kimi K2 \cite{kimik2}, and Nemotron 3 Super \cite{nemotron3}. We will provide \textbf{NUMBER OF EXAMPLES} domain experts with paired samples containing \textsc{Mentor-RL} outputs and outputs from another randomly selected model. We will then ask scientists to indicate their preferred interpretation, and with this information, we will calculate the proportion of \textsc{Mentor-RL} outputs that are preferred compared to other models.
@@ -530,23 +547,24 @@ In conjunction with empirical validation, which measures model accuracy, we will
 After conducting inter-model preference testing, we will perform intra-model preference testing to compare preferences for different model checkpoints. Using the same protocol described for inter-model comparative evaluation, we will compare the base, SFT, DPO, and PPO-trained \textsc{Mentor-RL} checkpoints. Blind comparative testing will allow us to evaluate model characteristics such as style, tone, and concision that are not easily evaluable with empirical metrics.
 
 \subsubsection{Efficiency and Ablations}
-\begin{itemize}
-    \item 
-\end{itemize}
+In order to ensure that each component of our methodology contributes to an improvement in mechanistic interpretation, we will perform efficiency and ablation studies on our model. 
 
 \section{Expected Results and Contributions}
-\begin{itemize}
+After training and evaluating \textsc{Mentor-RL}, we will present the following contributions as a result of our work:
+
+\begin{enumerate}
     \item A benchmarkable mechanistic exploration environment grounded in CORUM.
-    \item A training pipeline for tool-use agents driven by deterministic feedback (no proprietary judge).
-    \item Evidence that smaller open models can achieve strong mechanistic exploration with lower inference cost than frontier models.
-\end{itemize}
+    \item A training pipeline for tool-use agents driven by deterministic feedback, without using proprietary judges or data generators.
+    \item Evidence that open models can achieve strong mechanistic exploration with lower inference cost than frontier models.
+\end{enumerate}
+
+By producing a benchmarkable mechanistic exploration environment, we hope to promote additional research on the use of LLMs for mechanistic modeling, further improving discovery 
 
 \section{Training Recipe}
 
 \section{Discussion}
 \subsection{CORUM licensing}
 \subsection{No expert judge modeling (reproducibility + ToU safety)}
-
 
 \printbibliography
 \end{document}
