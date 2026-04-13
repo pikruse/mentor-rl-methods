@@ -23,17 +23,17 @@
 
 \section{Introduction and Motivation}
 
-%\subsection{Biological Interpretation as Mechanistic Discovery}
-Biological interpretation involves the development/discovery of mechanistic relationships between biological entities such as genes, proteins, RNA, and other molecular components. Interpretation is essential for discovering context-specific relationships and developing models of disease, phenotypes, pathways, and regulatory systems. Recently, machine learning (ML) and artificial intelligence (AI) techniques such as iterative random forest (iRF) \cite{basu2018iterative, cliff2019high}, \textbf{\textsc{Mentor}} \cite{mentor}, and related approaches have accelerated research through the construction of biologically informed networks, which scientists explore to generate mechanistic and functional hypotheses.
+\subsection{Biological Interpretation as Mechanistic Discovery}
+Biological interpretation involves the development and discovery of mechanistic relationships between biological entities such as genes, proteins, RNA, and other molecular components. Interpretation is essential for discovering context-specific relationships and developing models of disease, phenotypes, pathways, and regulatory systems. Recently, machine learning (ML) and artificial intelligence (AI) techniques such as iterative random forest (iRF) \cite{basu2018iterative, cliff2019high}, \textbf{\textsc{Mentor}} \cite{mentor}, and related approaches have accelerated research through the construction of biologically informed networks, which scientists explore to generate mechanistic and functional hypotheses.
 
 As these methods increase the resolution and scope of networks, biological interpretation has become increasingly mediated by large, densely connected, multi-scale graph structures. To comprehensively examine these large biological networks and supporting databases, mechanistic exploration requires iterative querying and multi-step reasoning. Recent agentic interpretation systems \cite{eubiota} demonstrate that provenance-preserving retrieval and tool-mediated synthesis can yield high-fidelity mechanistic narratives, but the approach remains expensive and not fully optimized as a trainable policy.
 
-%\subsection{Biological Interpretation is Bottlenecked by Scale, both in Human Cognition and Frontier Model Cost}
+\subsection{Biological Interpretation is Bottlenecked by Human Cognition and Frontier Model Cost}
 Although ML/AI methods have refined mechanistic focus into groups of functionally related clades of genes, these clades can still be massive and intractable for individual researchers to systematically explore. Additionally, most research emphasizes a deep-but-narrow focus on a small subset of functionally related genes, which can overlook broader, yet biologically meaningful, network context, particularly in highly interactive systems such as living organisms. As biological networks grow in complexity, the combinatorial space of possible multi-hop interactions expands rapidly, while human interpretive capacity remains fixed.
 
 While large language models (LLMs) can synthesize large volumes of information, frontier inference cost scales with exploration length and reasoning depth, limiting agentic deployment for long-horizon network traversal. This mismatch creates a scaling limit in biological mechanistic interpretation: rich relational structures can be computed, but downstream synthesis remains constrained by human bandwidth and model cost. Consequently, the speed, breadth, and contextual depth of mechanistic discovery are limited, particularly for complex traits, polygenic diseases, and multi-layer regulatory systems.
 
-%\subsection{AI-Guided Reasoning to Extend Mechanistic Interpretation Beyond Human Scale}
+\subsection{AI-Guided Reasoning to Extend Mechanistic Interpretation Beyond Human Scale}
 Open-source LLMs present an opportunity to aid scientists in mechanistic discovery tasks without being cost prohibitive. Recent developments in agent-based systems enable models to invoke deterministic tools with structured interfaces, substantially reducing hallucination and enabling provenance-preserving exploration. We propose \textsc{\textbf{Mentor-RL}}, a reasoning agent trained on human-annotated biological ground truth and verifiable interaction objectives, enabling scalable mechanistic exploration without reliance on proprietary models.
 
 By training a transformer-based agent with reinforcement learning across tool-use tasks and contextual levels of biological network data, we aim to produce a model that can traverse complex networks, synthesize \textit{multi-hop} mechanistic hypotheses, and integrate both local functional structure and global topological context. Leveraging open-source model offerings allows local deployment, with training costs amortized across many exploration sessions. Rather than replacing scientific judgment, \textbf{\textsc{Mentor-RL}} extends researcher interpretive bandwidth, enabling broader, faster, and more context-aware mechanistic discovery.
@@ -345,7 +345,7 @@ while the target remains $C = C_{\text{module}}$. the CORUM-grounded corpus prov
 \end{algorithm}
 
 \subsubsection{Graph Environment and Runtime}\label{sec:graph-runtime}
-Each CORUM-derived task instance is paired with a graph environment defined over the same canonical gene universe as the in-house multiplex, of which CORUM is a labeled subset. The sampled input set $C^{\text{in}}$ initializes the agent's graph anchors, while the hidden target $C$ and associated annotations define the supervisory signal. For negative examples, noise genes are sampled from the full multiplex gene universe rather than only from CORUM, reducing the likelihood of generating an accidentally coherent module.
+Each CORUM-derived task instance is paired with a graph environment defined over the same canonical gene universe as the in-house HumanNetv3 multiplex, of which CORUM is a labeled subset. The sampled input set $C^{\text{in}}$ initializes the agent's graph anchors, while the hidden target $C$ and associated annotations define the supervisory signal. For negative examples, noise genes are sampled from the full multiplex gene universe rather than only from CORUM, reducing the likelihood of generating an accidentally coherent module.
 
 To interface the graph environment with the training pipeline, we use a native C++ \cite{cpp} multiplex runtime exposed to Python through pybind11 \cite{pybind11}. Training, rollout, and optimization code are implemented in Python \cite{python}, while graph storage and graph operations are implemented in C++ for efficient execution on large multiplexes. Multiplex networks are stored in either custom binary or HDF5 format, depending on scale and interoperability requirements.
 
@@ -443,8 +443,46 @@ Given a sampled task and initialized state, we sample multiple action candidates
     \label{fig:shared-prefix}
 \end{figure} 
 
-\subsubsection{Initialization, Tool Validation, and Query Construction}
+\subsubsection{Initialization, Tool Validation, and Query Construction}\label{sec:init-valid-query}
 
+We define $\text{InitState}(q, e^{\text{user}}, C^{\text{in}})$ as a deterministic function that constructs the initial interpretation $I_0$ and structured state $S_0$ from the query, user-provided evidence, and seed gene set. The working interpretation $I_0$ is populated from a fixed template: the mechanistic claim is empty, the evidence field records only the user-provided inputs, the uncertainty field is blank, and the next subgoal is set to the query $q$. The structured state $S_0$ is initialized as follows:
+\begin{enumerate}
+    \item the user-provided anchors are set to $(q, e^{\text{user}})$,
+    \item the relationship status $rel_0$ is set to \texttt{unknown},
+    \item the predicted group is initialized to $G_0 = C^{\text{in}}$,
+    \item the evidence log $E_0$ is empty,
+    \item the mechanistic labels $y_{\text{mech}}$ are empty,
+    \item the remaining budget is $T_{\max}$ and the continuation state is $z_0 = \texttt{continue}$.
+\end{enumerate}
+The agent does not observe the task type $C_{\text{type}}$, the true relationship status, or the hidden target $C$; it must infer the appropriate task case through exploration.
+
+We define $\text{ValidTool}(a_{t,i}, S_t)$ as a deterministic function that checks whether a proposed tool action $a_{t,i}$ is executable given the current structured state $S_t$. Validation proceeds in two stages. First, the syntax check verifies that the tool name referenced in $a_{t,i}$ exists in the current tool vocabulary and that all arguments conform to the tool's input schema. Second, the semantic check verifies that basic conditions are satisfied with respect to the graph environment. For example, the function ensures that queried genes exist in the multiplex, requested layers are valid, and required fields in $S_t$ are populated. If either check fails, $\text{ValidTool}$ returns false and the observation $o_{t,i}$ is set to $\varnothing$. Invalid tool calls are counted toward $n_{inv}$ in the efficiency penalty (Equation \ref{eqn:eff-pen}).
+
+At inference time, users provide a natural language query $q$ alongside optional evidence $e^{\text{user}}$. Queries are unconstrained and may range from broad exploratory requests to specific hypothesis-driven questions. Evidence may include any combination of:
+\begin{enumerate}
+    \item a seed gene list,
+    \item a multiplex graph or subgraph,
+    \item free-text context such as experimental notes or prior findings, and
+    \item structured annotations such as GO terms, pathway labels, or expression data from prior analysis.
+\end{enumerate}
+
+During training, we simulate this variability by generating diverse queries and evidence configurations from CORUM sample metadata. For each sampled task $(C^{\text{in}}, C, C_{\text{type}}, y_{\text{mech}})$, we sample a query from task-type-specific templates and an evidence mode $\rho \in \{\texttt{minimal}, \texttt{graph}, \texttt{contextual}, \texttt{full}\}$ that controls which evidence types are provided to the agent. Table \ref{tbl:query-templates} defines representative query templates and compatible evidence modes for each task type. To promote phrasing diversity, we use an LLM to paraphrase each template query into multiple natural language variants conditioned on the gene names and mechanistic annotations of the sampled complex. All generated queries and evidence configurations are cached during dataset construction for reproducibility.
+
+\begin{table}[ht]\label{tbl:query-format}
+\centering
+\caption{Representative query templates and compatible evidence modes by task type. Evidence modes: \texttt{minimal} (seed gene list), \texttt{graph} (seed gene list + multiplex subgraph), \texttt{contextual} (seed gene list + free-text context), \texttt{full} (all evidence types including structured annotations).}
+\label{tbl:query-templates}
+\begin{tabularx}{\textwidth}{l Y l}
+\toprule
+\textbf{Task type} & \textbf{Example query} & \textbf{Evidence modes} \\
+\midrule
+\texttt{recovery} & ``What other genes are functionally related to \{seed genes\}?'' & all \\
+\texttt{refinement} & ``Which of these genes do not belong together?'' & all \\
+\texttt{explanation} & ``What mechanism connects \{seed genes\}?'' & all \\
+\texttt{none} & ``Are these genes mechanistically related?'' & all \\
+\bottomrule
+\end{tabularx}
+\end{table}
 
 \subsubsection{Branch Ranking, Preference Mining, and Selection}\label{sec:branch-ranking}
 Each candidate branch is assigned a deterministic local score computed from the structured state, runtime outputs, and hidden CORUM targets. These local scores are used to rank same-prefix candidates, mine DPO preference pairs, and select the continuation branch for the logged trajectory. We defer the formal score definitions to Section \ref{sec:rewards}.
@@ -453,7 +491,7 @@ Each candidate branch is assigned a deterministic local score computed from the 
 \subsubsection{Design Principles and Scoreable Objects}
 We define all training-time scores over structured state transitions, deterministic runtime metadata, and hidden CORUM-derived targets rather than textual reasoning. This design choice keeps scoring reproducible, machine-parseable, and scalable, while avoiding dependence on human judges or semantic evaluation of natural-language trajectories. We decompose all scores into four components: schema compliance, complex membership, mechanistic label accuracy, and efficiency. Additionally, we distinguish between local scores, which measure per-step improvement for shared-prefix comparison, and terminal rewards, which include absolute recovery for trajectory-level evaluation.
 
-\subsubsection{Deterministic Local Branch scoring for DPO}
+\subsubsection{Deterministic Local Branch Scoring for DPO}
 We define local branch scoring for DPO as 
 
 \begin{equation}\label{eqn:local-reward}
@@ -485,14 +523,14 @@ Finally, $p_{eff}$ is a small penalty designed to discourage two behaviors: exce
     p^{eff}_{t,i,j} = \lambda_1 (t / T_{\max}) + \lambda_2(n_{inv} / n_{total}).
 \end{equation}
 
-\subsubsection{Terminal Reward Decomposition for GRPO}
+\subsubsection{Terminal Reward Decomposition for GRPO}\label{sec:terminal-reward}
 Unlike DPO, which compares local same-prefix branches, policy gradient methods require a scalar reward for a completed rollout. We therefore define a terminal reward over the final structured state and trajectory log:
 
 \begin{equation}\label{eqn:terminal-reward}
     R_T = w^T_s s^T_{schema} +w^T_{abs} s^{T}_{complex} + w^T_{c} \Delta s^{T}_{complex} + w^T_{mabs} s^T_{mech} + w^T_{m} \Delta s^{T}_{mech} - w^T_e p^{T}_{eff}. 
 \end{equation}
 
-While all terms included in local scoring appear in the terminal reward, they are modified to capture global behavior. Additionally, two new rewards are included to capture absolute recovery. Absolute terms appear in the terminal score but not the local score; because local scoring is evaluated on examples that share the same starting state $S_t$, absolute levels cancel, and only relative metrics matter. Conversely, the terminal reward is evaluating complete trajectories, which may vary in starting difficulty and length, so absolute metrics capture global problem-solving ability.
+While all terms included in local scoring appear in the terminal reward, they are modified to capture global behavior. Additionally, two new rewards are included to capture absolute recovery. Absolute terms appear in the terminal score but not the local score. Because local scoring is evaluated on examples that share the same starting state $S_t$, absolute levels cancel, and only relative metrics matter. Conversely, the terminal reward is evaluating complete trajectories, which may vary in starting difficulty and length, so absolute metrics capture global problem-solving ability.
 
 We define the absolute complex membership score as the composite Jaccard, precision, and recall evaluated on the final predicted group $G_T$ against the hidden target $C$:
 \begin{equation}\label{eqn:terminal-complex-abs}
@@ -554,16 +592,16 @@ We first train our policy model with warm-start SFT using the closed-book datase
 We continue the supervised fine-tuning stage by adding open-book tool calling examples and evidence-to-finding examples to our data mixture. We initialize our policy from the warm-start SFT checkpoint with the lowest loss, and we utilize the same pipeline for model training.
 
 \subsubsection{DPO Training}
-After training our model via SFT, we will utilize its learned domain knowledge and tool calling capabilities to perform DPO training. We will utilize examples generated with the trajectory construction methods specified in \ref{sec:shared-prefix} to create paired preference data. Trajectories will be scored using the functions defined in Section \ref{sec:pref-construction}; the highest-scoring trajectory will be used as the preferred candidate, while either the lowest-scoring median-scoring trajectories will be utilized as the dispreferred candidate. Model weights will be optimized using the DPO objective function \cite{dpo}:
+After training our model via SFT, we will utilize its learned domain knowledge and tool calling capabilities to perform DPO training. We will utilize examples generated with the trajectory construction methods specified in \ref{sec:shared-prefix} to create paired preference data. Trajectories will be scored using the functions defined in Section \ref{sec:pref-construction}; the highest-scoring trajectory will be used as the preferred candidate, while either the lowest-scoring or median-scoring trajectories will be utilized as the dispreferred candidate. Model weights will be optimized using the DPO objective function \cite{dpo}:
 
 \[
 \mathcal{L}_{\text{DPO}}(\pi_\theta; \pi_{\text{ref}}) = -\mathbb{E}_{(x, y_w, y_l) \sim \mathcal{D}} \left[ \log \sigma \left( \beta \log \frac{\pi_\theta(y_w | x)}{\pi_{\text{ref}}(y_w | x)} - \beta \log \frac{\pi_\theta(y_l | x)}{\pi_{\text{ref}}(y_l | x)} \right) \right].
 \]
 
-Additionally, during training, we will re-generate trajectories with new, trained model checkpoints to improve our model's generated preference data. This will allow us to continue making model improvements even after scoring is optimized on our initial dataset.
+Additionally, during training, we will generate trajectories with new, trained model checkpoints to improve our model's generated preference data. This will allow us to continue making model improvements even after scoring is optimized on our initial dataset.
 
 \subsubsection{Online RL for Long-Horizon Exploration}
-After trained with DPO, we will implement a final GRPO stage for long-horizon exploration. Unlike DPO, GRPO requires no annotated trajectories; rather, optimization by calculating the advantage of an output relative to the rollout group $\{o_1, o_2, \dots, o_G\}$ using the function
+After training with DPO, we will implement a final GRPO stage for long-horizon exploration. Unlike DPO, GRPO requires no annotated trajectories; rather, optimization is done by calculating the advantage of an output relative to the rollout group $\{o_1, o_2, \dots, o_G\}$ using the function
 
 \begin{multline*}
     \mathcal{J}_{GRPO} = \mathbb{E}[q \sim P(Q), \{y_i\}_{i=1}^{G} \sim \pi_{\theta_{old}}(Y\mid q)] \\
@@ -580,7 +618,7 @@ where
 By foregoing structured, annotated preference pairs, GRPO promotes novel exploration for problem solving. We aim to utilize this policy gradient method to prevent mode collapse in exploration trajectories and reinforce full coverage of the exploration space. 
 
 \subsection{Curriculum and Optimization Strategy}\label{sec:curriculum}
-We employ a training curriculum throughout the optimization process, scaling problem difficulty with model performance. 
+We will employ a training curriculum throughout the optimization process, scaling problem difficulty with model performance. 
 
 During the SFT stage, we scale difficulty by moving from closed-book biological questions to open-book biological questions that require tool use. This promotes learning biological understanding first, and then moving to structured, schema-respecting tool calling tasks second.
 
@@ -590,27 +628,46 @@ We scale long-horizon reinforcement learning difficulty with several strategies.
 
 \subsection{Evaluation and Benchmarks}\label{sec:eval}
 \subsubsection{CORUM Holdout Evaluation}
-We will use several metrics to evaluate the effectiveness of our model empirically. Each metric can be calculated by parsing the model's terminal structured state $S_T$, allowing for scalable evaluation of our checkpoints. All evaluations will be conducted on a held out group of CORUM complex examples.
+We will use several metrics to evaluate the effectiveness of our model. Each metric will be calculated by parsing the model's terminal structured state $S_T$, allowing for scalable evaluation of our checkpoints. All evaluations will be conducted on a held out group of CORUM complex examples.
 
-We will use four metrics to evaluate model performance: recovery F1, Jaccard index, precision@k, and recall@k. 
+We will report four metrics for evaluation: Jaccard index $J$, precision $P$, recall $R$, and $F_1$ score on predicted CORUM complexes $C^{pred}$ vs. ground truth complexes $C$. Jaccard index is defined as 
+\[
+    J(C^{pred}, C) = \frac{\mid C^{pred} \cap C \mid}{\mid C^{pred} \cup C \mid},
+\]
+penalizing both missing and extra entities. Precision is defined as
+\[
+    P = \frac{TP}{TP + FP},
+\]
+measuring the proportion of true positive entities compared to all predicted positives. Recall is defined as
+\[
+    R = \frac{TP}{TP + FN},
+\]
+measuring the proportion of true positive predictions to the sum of true positives and false negatives. The F1 score is defined as the harmonic mean of precision and recall,
+\[
+    F1 = \frac{2}{\frac{1}{P} + \frac{1}{R}},
+\]
+providing a balanced view of precision and recall to measure general performance. In addition to these complex recovery metrics, we will measure mechanistic label accuracy, defined in Equation \ref{eqn:terminal-mech-abs}, to ensure that each recovered gene is correctly annotated.
 
-\begin{itemize}
-    \item recovery F1 / Jaccard / precision@k / recall@k
-    \item mechanistic label accuracy
-    \item noisy refinement performance
-    \item no-mechanism detection
-\end{itemize}
+We will report the weighted composite reward $R_T$, defined in Section \ref{sec:terminal-reward}, to directly compare training reward magnitude on validation and holdout splits. If the task type is \texttt{none}, meaning $C = \varnothing$, we will parse the $S_T$ for the predicted relationship $rel_T$. Along with computing global accuracy, we will distinguish between both error directions, analyzing when the model claims no mechanism exists for truly related gene sets and when the model fabricates a mechanism for truly unrelated entities.
+
+Furthermore, we will report efficiency metrics, such as mean trajectory length, budget utilization, and invalid tool call rate. This allows for comparison between holdout efficiency and validation efficiency metrics computed in Equation \ref{eqn:terminal-eff}.
+
+In addition to general evaluation, we will stratify our evaluation across several axes: complex size, noise, and task type. We will divide complex size and noise into three discrete bins each for comparative evaluation. Reporting stratified metrics allows us to analyze how \textbf{\textsc{Mentor-RL}} performs as task difficulty increases and task type changes.
 
 \subsubsection{Novel-Domain Evaluation}
-In addition to empirical evaluation using CORUM complexes as ground truth, we will utilize \textsc{Mentor} to conduct evaluations on novel experimental data. Current versions of the \textsc{Mentor} pipeline significance measures for gene modules yield a ground truth for complexes outside the mammalian protein realm. We will use previously derived experimental data, such as \textbf{NAME DATATYPES} as our ground truth. Because these examples are derived \textsc{Mentor} results on real experimental data, this process will allow us to assess the performance of \textsc{Mentor-RL} on examples outside of the curated CORUM universe. As such, we will gain a better understanding of the strengths and limitations of \textsc{Mentor-RL} on out-of-distribution, real-world data, while still having expert and algorithm-verified ground truth examples to compare to.
+In addition to empirical evaluation using CORUM complexes as ground truth, we will utilize \textsc{Mentor} to conduct evaluations on novel experimental data. Current versions of the \textsc{Mentor} pipeline significance measures for gene modules yield a ground truth for complexes outside the mammalian protein realm. We will use previously derived experimental data, such as brain multiplex data, as our ground truth. Because these examples are derived from \textsc{Mentor} results on real experimental data, this process will allow us to assess the performance of \textsc{Mentor-RL} on examples outside the curated CORUM universe using the same evaluation techniques described in Section \ref{sec:eval}. As such, we will gain a better understanding of the strengths and limitations of \textsc{Mentor-RL} on out-of-distribution, real-world data, while still having expert- and algorithm-verified ground truth examples to compare to.
 
-\subsubsection{Blind Comparative Evaluation}
-In conjunction with empirical validation, which measures model accuracy, we will conduct blind comparative evaluations to measure expert domain scientists' model preferences. First, we will perform an inter-model preference test, supplying interpretation outputs from \textsc{Mentor-RL}, GPT-5 \cite{gpt5}, gpt-oss-120b \cite{gpt-oss}, LLaMA 4 \cite{llama4}, Kimi K2 \cite{kimik2}, and Nemotron 3 Super \cite{nemotron3}. We will provide \textbf{NUMBER OF EXAMPLES} domain experts with paired samples containing \textsc{Mentor-RL} outputs and outputs from another randomly selected model. We will then ask scientists to indicate their preferred interpretation, and with this information, we will calculate the proportion of \textsc{Mentor-RL} outputs that are preferred compared to other models.
+\subsubsection{Blind Comparative Evaluation}\label{sec:blind-eval}
+In conjunction with empirical validation, which measures model accuracy, we will conduct blind comparative evaluations to measure expert domain scientists' model preferences. First, we will perform an inter-model preference test, supplying interpretation outputs from \textsc{Mentor-RL}, GPT-5 \cite{gpt5}, gpt-oss-120b \cite{gpt-oss}, LLaMA 4 \cite{llama4}, Kimi K2 \cite{kimik2}, and Nemotron 3 Super \cite{nemotron3}. We will provide between 5 and 15 domain experts with paired samples containing \textsc{Mentor-RL} outputs and outputs from another randomly selected model. We will then ask scientists to indicate their preferred interpretation, and with this information, we will calculate the proportion of \textsc{Mentor-RL} outputs that are preferred compared to other models.
 
 After conducting inter-model preference testing, we will perform intra-model preference testing to compare preferences for different model checkpoints. Using the same protocol described for inter-model comparative evaluation, we will compare the base, SFT, DPO, and GRPO-trained \textsc{Mentor-RL} checkpoints. Blind comparative testing will allow us to evaluate model characteristics such as style, tone, and concision that are not easily evaluable with empirical metrics.
 
 \subsubsection{Efficiency and Ablations}
-In order to ensure that each component of our methodology contributes to an improvement in mechanistic interpretation, we will perform efficiency and ablation studies on our model. 
+To ensure that each component of our methodology contributes to an improvement in mechanistic interpretation, we will ablate both training stages and design elements. All ablations will be evaluated using the holdout metrics defined in Section \ref{sec:eval}.
+
+We will ablate phases of our training pipeline to confirm that each stage improves over the previous checkpoints. First, we will test our SFT-only checkpoint compared to the SFT- and DPO-trained checkpoint to ensure that preference optimization yields interpretation gains. Next, we will compare the DPO checkpoint to the full training pipeline to determine whether long-horizon RL training leads to improvement over local preference training. Finally, we will examine the effects of training with only closed-book SFT data vs. a mixed closed- and open-book training set to evaluate whether tool-calling examples in SFT lead to better DPO optimization.
+
+Along with testing various training stages, we will ablate architectural and reward decisions. First, we will ablate the policy's verifier mode, removing it to test whether self-verification is useful for producing better results. Additionally, we will remove the efficiency penalty $p^{eff}$ from the reward to test whether \textbf{\textsc{Mentor-RL}} can learn reasonable trajectory lengths without regularization. Finally, we will ablate difficulty bins in our training curriculum, training on all difficulty bins simultaneously rather than staging them progressively. This ablation will allow us to examine whether the model can learn from hard examples without curriculum staging.
 
 \section{Expected Results and Contributions}
 After training and evaluating \textbf{\textsc{Mentor-RL}}, we will present the following contributions as a result of our work:
@@ -622,6 +679,16 @@ After training and evaluating \textbf{\textsc{Mentor-RL}}, we will present the f
 \end{enumerate} 
 
 These contributions aim to promote open scientific reporting on LLM training for biology and standardize evaluation methods for mechanistic exploration.
+
+\section{Discussion and Conclusion}
+\subsection{CORUM licensing}
+Because the CORUM dataset is restricted to academic, non-commercial use, and redistribution of the raw data is not permitted under standard terms, our model releases will not include the raw dataset. However, to ensure reproducibility, we will store train, validation, and test split indices along with the code for reconstructing the raw training dataset. Furthermore, other cached API responses from databases such as MyGene.info and KEGG can be distributed under their own licenses.
+
+\subsection{Reproducibility Without Expert Judges}
+The training pipeline for \textbf{\textsc{Mentor-RL}} foregoes the use of expert judge modeling to ensure reproducibility and compliance with terms of use. Rather than utilizing proprietary models to generate trajectories, data is generated either from sampling the policy model or using deterministic templates. This allows researchers to reproduce our methods without access to model APIs. Furthermore, relying on open-source models during training eliminates the risk of violating proprietary model terms of service. Despite avoiding proprietary models for data generation, we will still compare \textbf{\textsc{Mentor-RL}} to these models through blind comparative evaluation, detailed in Section \ref{sec:blind-eval}.
+
+\subsection{Conclusion}
+We have presented \textbf{\textsc{Mentor-RL}}, a proposed open-source large language model for biological mechanistic interpretation. \textbf{\textsc{Mentor-RL}} will aid scientists in various interpretation tasks through an act-verify loop equipped with tool use features on user experimental data. We will verify \textbf{\textsc{Mentor-RL}} using the CORUM mammalian protein complex dataset, and our work will be openly available for benchmarking and reproducibility.
 
 \section{Training Recipe}
 In addition to the methodology provided in Section \ref{sec:methods}, we present a recipe for training our model on ORNL's Frontier Supercomputer.
@@ -640,9 +707,7 @@ In addition to the methodology provided in Section \ref{sec:methods}, we present
 
 \subsection{Model Deployment}
 
-\section{Discussion}
-\subsection{CORUM licensing}
-\subsection{No expert judge modeling (reproducibility + ToU safety)}
+
 
 \printbibliography
 \end{document}
