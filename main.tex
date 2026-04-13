@@ -263,7 +263,7 @@ We define several target types for training and evaluation to support dense opti
 Our dataset is constructed from a combination of existing internal tool infrastructure, open-source biological resources, and graph exploration environments.
 
 \subsubsection{Warm-Start SFT Dataset} 
-We first construct a warm-start SFT subset from the \textbf{\textsc{Mentor-IA}} tool stack, including gene metadata, gene ontology (GO) annotations, pathway membership, and literature evidence. These data are retrieved via MyGene.info \cite{mygene.info}, KEGG \cite{kanehisa2002kegg}, Reactome \cite{reactome}, EMBL-EBI \cite{embl-ebi}, and PubMed/PMID-linked retrieval tools \cite{pubmed}. This warm-start subset covers four task families:
+We first construct a warm-start SFT subset from the \textbf{\textsc{Mentor-IA}} tool stack \cite{mentor-ia}, including gene metadata, gene ontology (GO) annotations, pathway membership, and literature evidence. These data are retrieved via MyGene.info \cite{mygene.info}, KEGG \cite{kanehisa2002kegg}, Reactome \cite{reactome}, EMBL-EBI \cite{embl-ebi}, and PubMed/PMID-linked retrieval tools \cite{pubmed}. This warm-start subset covers four task families:
 \begin{enumerate}
     \item entity normalization, such as resolving gene names and synonyms to canonical identifiers,
     \item annotation retrieval, such as returning GO terms, localization, and pathway information for a gene or gene set,
@@ -273,7 +273,7 @@ We first construct a warm-start SFT subset from the \textbf{\textsc{Mentor-IA}} 
 
 We include tool-enabled (open-book) and tool-disabled (closed-book) questions, with open-book examples emphasized to promote schema-valid tool use and evidence grounding, and closed-book examples used to strengthen biological vocabulary and lightweight recall. To make this stage reproducible, API responses and database versions will be cached during dataset construction.
 
-To make the warm-start SFT stage concrete, we define a core tool vocabulary derived from the existing \textbf{\textsc{Mentor-IA}} infrastructure in Table \ref{tbl:tools}, with each tool specified by its purpose, input schema, output schema, and training stage. Early SFT uses only this core tool set to teach schema-valid biological tool use before larger graph-exploration operators are introduced during DPO and online RL.
+To make the warm-start SFT stage concrete, we define a core tool vocabulary derived from the existing \textbf{\textsc{Mentor-IA}} infrastructure \cite{mentor-ia} in Table \ref{tbl:tools}, with each tool specified by its purpose, input schema, output schema, and training stage. Early SFT uses only this core tool set to teach schema-valid biological tool use before larger graph-exploration operators are introduced during DPO and online RL.
 
 \subsubsection{CORUM-Grounded Training Corpus}\label{sec:corum-corpus}
 After constructing the warm-start SFT dataset, we create a CORUM-grounded training corpus that serves as a human-curated ground-truth dataset for mechanistic discovery. Before task generation, CORUM complexes are split at the complex level into train, validation, and test partitions to prevent leakage across stages. We then define a sampling scheme to produce examples for multiple cases: complex recovery from a small seed set, mechanism explanation from a complete module, complex refinement from a noisy module, and recognition of no single mechanistic relationship.
@@ -345,11 +345,11 @@ while the target remains $C = C_{\text{module}}$. the CORUM-grounded corpus prov
 \end{algorithm}
 
 \subsubsection{Graph Environment and Runtime}\label{sec:graph-runtime}
-Each CORUM-derived task instance is paired with a graph environment defined over the same canonical gene universe as the in-house HumanNetv3 multiplex, of which CORUM is a labeled subset. The sampled input set $C^{\text{in}}$ initializes the agent's graph anchors, while the hidden target $C$ and associated annotations define the supervisory signal. For negative examples, noise genes are sampled from the full multiplex gene universe rather than only from CORUM, reducing the likelihood of generating an accidentally coherent module.
+Each CORUM-derived task instance is paired with a graph environment defined over the same canonical gene universe as the in-house HumanNet multiplex, of which CORUM is a labeled subset. The sampled input set $C^{\text{in}}$ initializes the agent's graph anchors, while the hidden target $C$ and associated annotations define the supervisory signal. For negative examples, noise genes are sampled from the full multiplex gene universe rather than only from CORUM, reducing the likelihood of generating an accidentally coherent module.
 
 To interface the graph environment with the training pipeline, we use a native C++ \cite{cpp} multiplex runtime exposed to Python through pybind11 \cite{pybind11}. Training, rollout, and optimization code are implemented in Python \cite{python}, while graph storage and graph operations are implemented in C++ for efficient execution on large multiplexes. Multiplex networks are stored in either custom binary or HDF5 format, depending on scale and interoperability requirements.
 
-The runtime uses a set of optimized multiplex functions developed as part of the \textsc{\textbf{Mentor}} \cite{mentor} and \textsc{\textbf{Mentor-IA}} projects \cite{}. Core operators include neighborhood retrieval, shortest-path search, random walk with restart on both monoplex and multiplex views, and subgraph induction. These operators provide the primary graph-facing actions available to the agent during exploration.
+The runtime uses a set of optimized multiplex functions developed as part of the \textsc{\textbf{Mentor}} \cite{mentor} and \textsc{\textbf{Mentor-IA}} \cite{mentor-ia} projects. Core operators include neighborhood retrieval, shortest-path search, random walk with restart on both monoplex and multiplex views, and subgraph induction. These operators provide the primary graph-facing actions available to the agent during exploration.
 
 All runtime operators return both graph objects and provenance metadata. In addition to nodes, edges, and scores, each returned object records the relevant layer identity, operator parameters, and source information needed to trace the final interpretation back to the graph evidence used to construct it. To ensure consistency across serialized multiplex files, C++ runtime objects, Python wrappers, and logged training artifacts, all nodes are represented in a single canonical identifier space and all edges are referenced using deterministic, layer-aware identifiers.
 
@@ -468,7 +468,7 @@ At inference time, users provide a natural language query $q$ alongside optional
 
 During training, we simulate this variability by generating diverse queries and evidence configurations from CORUM sample metadata. For each sampled task $(C^{\text{in}}, C, C_{\text{type}}, y_{\text{mech}})$, we sample a query from task-type-specific templates and an evidence mode $\rho \in \{\texttt{minimal}, \texttt{graph}, \texttt{contextual}, \texttt{full}\}$ that controls which evidence types are provided to the agent. Table \ref{tbl:query-templates} defines representative query templates and compatible evidence modes for each task type. To promote phrasing diversity, we use an LLM to paraphrase each template query into multiple natural language variants conditioned on the gene names and mechanistic annotations of the sampled complex. All generated queries and evidence configurations are cached during dataset construction for reproducibility.
 
-\begin{table}[ht]\label{tbl:query-format}
+\begin{table}[ht]
 \centering
 \caption{Representative query templates and compatible evidence modes by task type. Evidence modes: \texttt{minimal} (seed gene list), \texttt{graph} (seed gene list + multiplex subgraph), \texttt{contextual} (seed gene list + free-text context), \texttt{full} (all evidence types including structured annotations).}
 \label{tbl:query-templates}
@@ -605,8 +605,8 @@ After training with DPO, we will implement a final GRPO stage for long-horizon e
 
 \begin{multline*}
     \mathcal{J}_{GRPO} = \mathbb{E}[q \sim P(Q), \{y_i\}_{i=1}^{G} \sim \pi_{\theta_{old}}(Y\mid q)] \\
-    \frac{1}{G} \sum_{i=1}^{G}\frac{1}{\mid y_i \mid} \sum_{t=1}^{\mid y_i \mid} \Bigg \{ \text{min} \Big [ \frac{\pi_\theta (y_{i,t}\mid q, y_{i, <t})}{\pi_{\theta_{old}}(y_{i,t}\mid q, y_{i, <t})} \hat A_{i,t} \text{clip} \Big( \frac{\pi_\theta (y_{i,t}\mid q, y_{i, <t})}{\pi_{\theta_{old}}(y_{i,t}\mid q, y_{i, <t})}, 1 - \varepsilon, 1 + \varepsilon \Big) \hat A_{i,t} \Big] \\
-    - \beta \mathbb{D}_{KL} [\pi_\theta \mid\mid \pi_{re}] \Bigg \},
+    \frac{1}{G} \sum_{i=1}^{G}\frac{1}{\mid y_i \mid} \sum_{t=1}^{\mid y_i \mid} \Bigg \{ \text{min} \Big [ \frac{\pi_\theta (y_{i,t}\mid q, y_{i, <t})}{\pi_{\theta_{old}}(y_{i,t}\mid q, y_{i, <t})} \hat A_{i,t}, \text{clip} \Big( \frac{\pi_\theta (y_{i,t}\mid q, y_{i, <t})}{\pi_{\theta_{old}}(y_{i,t}\mid q, y_{i, <t})}, 1 - \varepsilon, 1 + \varepsilon \Big) \hat A_{i,t} \Big] \\
+    - \beta \mathbb{D}_{KL} [\pi_\theta \mid\mid \pi_{ref}] \Bigg \},
 \end{multline*}
 
 where 
