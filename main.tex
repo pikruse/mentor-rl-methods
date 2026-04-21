@@ -44,33 +44,13 @@ We make four contributions. First, we formalize mechanistic graph exploration as
 Transition paragraph
 \subsection{Biological Networks and Mechanistic Ground Truth}
 \subsubsection{Systems Biology and Mechanistic Discovery}
-\begin{itemize}
-    \item \cite{barabasi2004network}
-    \item \cite{barabasi2011network}
-    \item \cite{ideker2012differential}
-    \item "Uncovering disease-disease relationships through the incomplete interactome")
-    \item "From molecular to modular cell biology"
-\end{itemize}
+Systems biology examines biological function by studying interactions between molecular entities such as genes, proteins, and metabolites, rather than analyzing their individual properties \cite{hartwell1999molecular, barabasi2004network}. A central goal is identifying \textit{modules}, or groups of functionally related entities, and to characterize the mechanisms that underlie their behavior. Because network interactions can span across multiple scales and regulatory layers, modern systems biology relies on multiplex and multilayer network representations to capture context-specific relationships \cite{barabasi2011network, ideker2012differential}. Module-level analysis has become a foundational tool for identifying disease mechansisms, prioritzing drug targets, and interpreting polygenic phenotypes \cite{menche2015uncovering}, motivating the need for curated, mechanistic ground truth data against which computational methods can be developed and evaluated.
 
-\subsubsection{Curated Ground Truth: CORUM and Protein Complexes}
-\begin{itemize}
-    \item \cite{tsitsiridis2023corum}
-    \item Giurgiu et al. 2019 (CORUM 3.0 update
-    \item BioGRID (Oughtred et al. 2021)
-    \item Reactome (Gillespie et al. 2022)
-\end{itemize}
+\subsubsection{Curated Interaction Maps}
+Large-scale systems biology depends on curated molecular interaction databases that capture experimentally supported relationships at varying levels of resolution. Creating high-coverage, expert-annotated networks is crucial for enabling large-scale systems biology studies and encouraging mechanistic discovery.  BioGRID \cite{oughtred2021biogrid} catalogs physical and genetic interactions across humans and model organisms from both low- and high-throughput studies. Reactome \cite{reactome, gillespie2022reactome} provides manually curated, reaction-level pathway models for human biology. While both resources supply rich interaction evidence, neither organizes proteins into functional groups with verified co-membership. The CORUM database \cite{giurgiu2019corum, tsitsiridis2023corum} fills this gap by curating experimentally verified mammalian protein complexes exclusively from low-throughput experiments. Additionally, entities are annotated with Gene Ontology terms at both the subunit and complex level. By providing verified group membership, mechanistic annotation, and expert-verified provenance, CORUM is uniquely suited as a ground-truth resource for training and evaluating mechanistic discovery systems.
 
 \subsubsection{Network Construction and Exploration on Multiplexes}
-\begin{itemize}
-    \item \cite{basu2018iterative}
-    \item \cite{cliff2019high}
-    \item \cite{kohler2008walking}
-    \item \cite{cowen2017network}
-    \item De Domenico et al. 2013 (Nature Comm, multiplex network framework
-    \item Mucha et al. 2010 (Science, multilayer community detection) for multiplex foundations
-    \item \cite{newman2004finding, blondel2008fast} 
-    \item \cite{kipf2016semi, velivckovic2017graph} 
-\end{itemize}
+Several techniques make use of experimental data to generate and explore networks across multiple interaction layers. Iterative random forest (iRF) expands on traditional random forests by weighting the feature sampling distribution according to variable importance scores across successive fits and using a bootstrapping selection procedure to extract stable, nonlinear interactions \cite{basu2018iterative}. iRF has been used to construct predictive expression networks (PENs), which map the interactions between expressed genes, uncovering true connections from massive datasets that may be missed in hand-curated databases \cite{cliff2019high, walker2022evaluating}. Because biological systems comprise many complementary interaction modalities, integration them without losing information motivated the development on the multiplex network formalism \cite{mucha2010community, de2013mathematical}, which represents the same node set across multiple edge layers.  multiplex networks still support network propagation techniques, such as random walk with restart (RWR) \cite{kohler2008walking, cowen2017network} and other community detection techniques built on the modularity objective \cite{newman2004finding}, most prominently the Louvain method \cite{blondel2008fast} to discover functional modules. More recently, the power of graph deep learning has also been realized, supplanting hand-engineered propagation techniques with learned ones. Graph convolutional networks \cite{kipf2016semi} aggregate neighbor features through message passing, while graph attention networks learn pairwise weights through self attention \cite{velivckovic2017graph}. These techniques enable end-to-end supervised learning on tasks such as node classification, link prediction, and disease gene prioritization, with performance improving on as data availability increases.
 
 \subsection{Tool-Using Language Models for Scientific Reasoning}
 \subsubsection{Transformer Reasoning with Tool Use}
