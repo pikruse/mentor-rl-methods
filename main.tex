@@ -54,52 +54,31 @@ Despite their value as annotated, benchmarkable datasets, curated interaction ma
 
 \subsection{Tool-Using Language Models for Scientific Reasoning}
 \subsubsection{Transformer Reasoning with Tool Use}
-In addition to deep learning's growing utility for biological discovery, neural language models have shown promise for complex reasoning, especially when grounded with tool use. \cite{wei2022chain} demonstrated that prompting a model to show its reasoning steps before answering improved multi-step task performance in a few-shot setting, and \cite{kojima2022large} extended this result to show its effectiveness in a zero-shot scenario. Furthermore, adding self-consistency mechanisms \cite{wang2022self}, reflection and memory \cite{shinn2023reflexion}, and branched reasoning paths with lookahead and backtracking \cite{yao2023tree} have enhanced model reasoning capabilities. 
+In addition to deep learning's growing utility for biological discovery, neural language models have shown promise for complex reasoning, especially when grounded with tool use. \cite{wei2022chain} demonstrated that prompting a model to show its reasoning steps before answering improved multi-step task performance in a few-shot setting, and \cite{kojima2022large} extended this result to show its effectiveness in a zero-shot scenario. Furthermore, adding self-consistency mechanisms \cite{wang2022self} and branched reasoning paths with lookahead and backtracking \cite{yao2023tree} have enhanced model reasoning capabilities. 
 
 Despite this progress in model reasoning, probabilistic decoding and training data cutoffs still leave models prone to errors, including hallucination. In turn, equipping models with the ability to use external tools during training or inference provides a layer of deterministic verification and enables interaction with the outside world. Toolformer \cite{schick2023toolformer} showed that self-supervised fine-tuning of tool calls yielded better performance with lower hallucination across several benchmarks, and Gorilla \cite{patil2024gorilla} extended this paradigm to handling large API vocabularies with retrieval. ReAct \cite{yao2022react} showed that combining reasoning techniques with tool-based actions improved complex reasoning performance, and PAL \cite{gao2023pal} converted reasoning into programs, showing improved performance on computational tasks. These works demonstrate the power of combined reasoning and tool use for complex, multi-step problem solving, but their applications to scientific reasoning remain underexplored.
 
 \subsubsection{Agentic Architectures with Verification}
-While tool use combined with reasoning improve the model's ability to solve complex tasks, these techniques have no inherent verification mechanism. Several works have explored self-verification through various methods. Self-Refine \cite{madaan2023selfrefine} and Reflexion \cite{shinn2023reflexion} both 
-\begin{itemize}
-    \item Madaan et al. 2023 Self-Refine \cite{madaan2023selfrefine}
-    \item Shinn et al. 2023 Reflexion \cite{shinn2023reflexion}
-    \item Asai et al. 2023 Self-RAG \cite{asai2023selfrag}
-    \item Eubiota \cite{eubiota}
-\end{itemize}
+While reasoning and tool use techniques improve task solving capability, they lack inherent verification mechanism, which is crucial for making factual scientific claims. Several works have explored self-verification through various methods. Self-Refine \cite{madaan2023selfrefine} and Reflexion \cite{shinn2023reflexion} both define an iterative reflection loop without weight updates to improve answer quality; while self-refine uses single model to generate, critique, and refine its own output, Reflexion utilizes sequential refinement, storing reflections in a persistent verbal memory. Self-RAG \cite{asai2023selfrag} fine-tunes a language model to emit reflection tokens that govern when to retrieve passages and how to assess their relevance and support. Eubiota \cite{eubiota} extends the self-verification process to multi-agent systems, using a dedicated verifier with separate weights to check the groundedness and factuality of other agent outputs. These approaches establish self-verification as a core component of agentic systems, but none combine a shared-weight actor-verifier paradigm with reinforcement learning over deterministic, structured state rewards, which we develop in Section \ref{sec:methods}.
 
 \subsubsection{Agentic Gene Set Interpretation}
-\begin{itemize}
-    \item Eubiota \cite{eubiota}
-    \item Mentor-ia \cite{mentor-ia}
-    \item GeneAgent (Wang et al. 2024 if applicable),
-    \item GenePT (Chen \& Zou 2024) 
-\end{itemize}
+LLM-based gene set interpretation has progressed from precomputed embeddings to fully agentic systems. GenePT \cite{chen2025simple} employs GPT-4 to create gene-level and cell-level embeddings from natural language for use in downstream interpretation tasks. GeneAgent \cite{wang2025geneagent} utilizes a multi-step GPT-4 pipeline with self-verification and retrieval from biological databases to provide a human-readable interpretations for experimentally derived gene lists. \textbf{\textsc{Mentor-IA}} \cite{mentor-ia} extends this paradigm by creating separate agents for mechanistic interpretation subtasks, such as literature search, enrichment analysis, network analysis, and verification, unifying these outputs into a single mechanistic summary. Eubiota \cite{eubiota} functions similarly to \textbf{\textsc{Mentor-IA}}, but with a focus on the human gut microbiome. The authors partially train a planning agent with GRPO while keeping proprietary model-powered subagents frozen. While these works share \textbf{\textsc{Mentor-RL}}'s agentic framing for mechanistic interpretation, none implements a fully trainable, end-to-end policy over verifiable rewards, which we introduce in Section \ref{sec:methods}.
 
 \subsection{Reinforcement Learning for Long-Horizon Tool-Use}
 \subsubsection{Preference Optimization}
-\begin{itemize}
-    \item Christiano et al. 2017 (RLHF original)
-    \item Ouyang et al. 2022 (InstructGPT)
-    \item Rafailov et al. 2023 DPO
-    \item Azar et al. 2024 IPO (DPO theoretical critique)
-    \item Hong et al. 2024 ORPO
-\end{itemize}
+Christiano et al. introduced deep reinforcement learning from human feedback (RLHF) \cite{christiano2017rlhf}, replacing hand-specified reward functions with a value model trained on pairwise human preferences. This framework was extended by InstructGPT \cite{ouyang2022instructgpt}, which applied RLHF to align large language model outputs with human preferences. Direct preference optimization \cite{dpo} built on this work by deriving a mathematically equivalent objective that operates directly on preference pairs, only using the policy and a reference while foregoing the reward model. Azar et al. unified RLHF and DPO under $\Psi$PO, a general preference optimization framework, and introduced IPO to address DPO's tendency to overfit when observed preferences are deterministic or near-deterministic \cite{azar2024general}. Hong et al. proposed ORPO, a single-stage alternative that merges preference alignment and SFT via an odds-ratio penalty, removing the need for a separate alignment stage \cite{hong2024orpo}. While these methods carry varying tradeoffs, we elect to train \textbf{\textsc{Mentor-RL}} with DPO because our deterministic runtime supports scalable preference pair generation and the resulting checkpoint serves as a preference-aligned reference policy in the GRPO stage.
 
 \subsubsection{Policy Gradient and Group-Relative Methods}
-\begin{itemize}
-    \item Schulman et al. 2017 PPO
-    \item Shao et al. 2024 GRPO
-    \item DeepSeek-R1 2025 
-\end{itemize}
+While preference optimization provides a solution for aligning LLMs with preferences, policy gradient and group-relative methods provide the infrastructure for parameter updates across a variety of tasks. Proximal policy optimization (PPO) \cite{schulman2017proximal} was introduced as a simple, efficient, and scalable alternative to previous methods, \cite{schulman2015trust}, using a clipped probability ration term to form a pessimistic estimate of performance and KL divergence term to promote stable optimization. Group relative policy optimization (GRPO) \cite{shao2024deepseekmath} built upon PPO, computing the advantage term by measuring the divergence of outputs from a group mean rather than using a trained value model, reducing the memory burden of training. DeepSeek-R1 \cite{guo2025deepseek} used GRPO at the frontier scale, showing that state-of-the-art LLM training could be achieved using the GRPO algorithm. The power of policy gradient methods, especially over many reasoning steps, makes them conducive to \textbf{\textsc{Mentor-RL}} training, where long-horizon reinforcement learning is necessary for multi-hop biological graph exploration.
 
 \subsubsection{RL for Tool-Augmented Agents}
 \begin{itemize}
-    \item RL for Tool-Augmented Agents — Putta et al. 2024
-    \item Agent-Q, Qin et al. 2024
-    \item ToolLLM, Singh et al. 2024 Beyond Human Data
+    \item WebGPT — Nakano et al. 2021 (RLHF + tool use, foundational)
+    \item ToolLLM — Qin et al. 2024 (SFT baseline; DFSDT tree search at inference)
+    \item Agent Q — Putta et al. 2024 (MCTS + self-critique + off-policy DPO; closest precedent)
+    \item Beyond Human Data / ReST$^{EM}$ — Singh et al. 2024 (verifier-grounded self-training)
+    \item Search-R1 / R1-Searcher — 2025 (GRPO with search tools; recent)
 \end{itemize}
-
-
 
 \section{Proposed Methodology}\label{sec:methods}
 Our methodology has five components. Sections \ref{sec:agent_loop} and \ref{sec:task} formalize the iterative exploration loop and the mechanistic interpretation task. Sections \ref{sec:data} and \ref{sec:trajectory} describe dataset construction and environment design. Sections \ref{sec:rewards}, \ref{sec:training}, and \ref{sec:curriculum} define the training pipeline, reward functions, and curriculum. Finally, Section \ref{sec:eval} describes evaluation and benchmarking.
@@ -129,7 +108,7 @@ r_t, a_t \sim \pi_{\theta}^{\mathrm{act}}(\cdot \mid D_t), \qquad
 o_t = \varepsilon(a_t), \qquad
 I_{t+1}, S_{t+1}, z_t \sim \pi_{\theta}^{\mathrm{verify}}(\cdot \mid r_t, a_t, o_t, D_t),
 \]
-where $r_t$ is the agent's textual reasoning or subgoal, $a_t$ is the optional tool action, and $o_t$ is the observation returned by the deterministic runtime $\varepsilon$, with $\varepsilon(\varnothing)=\varnothing$ by convention. The policies $\pi_{\theta}^{\mathrm{act}}$ and $\pi_{\theta}^{\mathrm{verify}}$ denote two prompting modes of the same underlying model, sharing weights so that biological vocabulary and tool-use competence learned in one mode transfer to the other. We treat the risk that the verifier collapses as a monitoring concern during training, discusses in Section \ref{sec:limitations}. At each decision point, the pair $(I_t, S_t)$ represents the current mechanistic hypothesis, with $I_t$ serving as a human-readable view and $S_t$ as a machine-readable view of the same underlying state.
+where $r_t$ is the agent's textual reasoning or subgoal, $a_t$ is the optional tool action, and $o_t$ is the observation returned by the deterministic runtime $\varepsilon$, with $\varepsilon(\varnothing)=\varnothing$ by convention. The policies $\pi_{\theta}^{\mathrm{act}}$ and $\pi_{\theta}^{\mathrm{verify}}$ denote two prompting modes of the same underlying model, sharing weights so that biological vocabulary and tool-use competence learned in one mode transfers to the other. We treat the risk that the verifier collapses as a monitoring concern during training, discussed in Section \ref{sec:limitations}. At each decision point, the pair $(I_t, S_t)$ represents the current mechanistic hypothesis, with $I_t$ serving as a human-readable view and $S_t$ as a machine-readable view of the same underlying state.
 
 % MENTOR-RL Agent Loop PseudoCode
 \begin{algorithm}[t]
@@ -218,7 +197,7 @@ We first construct a warm-start SFT subset from the \textbf{\textsc{Mentor-IA}} 
 
 We include tool-enabled (open-book) and tool-disabled (closed-book) questions, with open-book examples emphasized to promote schema-valid tool use and evidence grounding, and closed-book examples used to strengthen biological vocabulary and lightweight recall. To make this stage reproducible, API responses and database versions will be cached during dataset construction.
 
-To make the warm-start SFT stage concrete, we define a core tool vocabulary derived from the existing \textbf{\textsc{Mentor-IA}} infrastructure \cite{mentor-ia} in Table \ref{tbl:tools}, with each tool specified by its purpose, input schema, output schema, an-mentor-ia}d training stage. Early SFT uses only this core tool set to teach schema-valid biological tool use before larger graph-exploration operators are introduced during DPO and online RL.
+To make the warm-start SFT stage concrete, we define a core tool vocabulary derived from the existing \textbf{\textsc{Mentor-IA}} infrastructure \cite{mentor-ia} in Table \ref{tbl:tools}, with each tool specified by its purpose, input schema, output schema, and training stage. Early SFT uses only this core tool set to teach schema-valid biological tool use before larger graph-exploration operators are introduced during DPO and online RL.
 
 \begin{table}[ht]
 \centering
