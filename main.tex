@@ -24,12 +24,12 @@
 \section{Introduction and Motivation}
 
 \subsection{Biological Interpretation as Mechanistic Discovery}
-Biological interpretation involves the development and discovery of mechanistic relationships between biological entities such as genes, proteins, RNA, and other molecular components. Interpretation is essential for discovering context-specific relationships and developing models of disease, phenotypes, pathways, and regulatory systems. Recently, machine learning (ML) and artificial intelligence (AI) techniques such as iterative random forest (iRF) \cite{basu2018iterative, cliff2019high}, \textbf{\textsc{Mentor}} \cite{mentor}, and related approaches have accelerated research through the construction of biologically informed networks, which scientists explore to generate mechanistic and functional hypotheses.
+Biological interpretation involves the development and discovery of mechanistic relationships between biological entities such as genes, proteins, RNA, and other molecular components. Interpretation is essential for discovering context-specific relationships and developing models of disease, phenotypes, pathways, and regulatory systems. Recently, machine learning (ML) and artificial intelligence (AI) techniques such as iterative random forest (iRF) \cite{basu2018iterative, cliff2019high} and related approaches have accelerated research through the construction of biologically informed networks, which scientists explore to generate mechanistic and functional hypotheses.
 
-As these methods increase the resolution and scope of networks, biological interpretation has become increasingly mediated by large, densely connected, multi-scale graph structures. To comprehensively examine these large biological networks and supporting databases, mechanistic exploration requires iterative querying and multi-step reasoning. Recent agentic interpretation systems such as eubiota \cite{eubiota} and \textsc{Mentor-IA} \cite{mentor-ia} demonstrate that provenance-preserving retrieval and tool-mediated synthesis can yield high-fidelity mechanistic narratives. However, these pipelines depend on frontier model inference and are not fully optimized as a trainable policy.
+As these methods increase the resolution and scope of networks, biological interpretation has become increasingly mediated by large, multi-scale graph structures. To comprehensively examine these large biological networks and supporting databases, mechanistic exploration requires iterative querying and multi-step reasoning. Recent agentic interpretation systems such as eubiota \cite{eubiota} and \textsc{Mentor-IA} \cite{mentor-ia} demonstrate that provenance-preserving retrieval and tool-mediated synthesis can yield high-fidelity mechanistic narratives. However, these pipelines depend on frontier model inference and are not fully optimized as a trainable policy.
 
 \subsection{Biological Interpretation is Bottlenecked by Human Cognition and Frontier Model Cost}
-Although ML/AI methods have refined mechanistic focus into groups of functionally related clades of genes, these clades can still be massive and intractable for individual researchers to systematically explore. Additionally, most research emphasizes a deep-but-narrow focus on a small subset of functionally related genes, which can overlook broader, yet biologically meaningful, network context, particularly in highly interactive systems such as living organisms. As biological networks grow in complexity, the combinatorial space of possible multi-hop interactions expands rapidly, while human interpretive capacity remains fixed.
+Although ML/AI methods such as \textsc{Mentor} \cite{mentor} have refined mechanistic focus into groups of functionally related modules of genes, these modules can still be massive and intractable for individual researchers to systematically explore. Additionally, most research emphasizes a deep-but-narrow focus on a small subset of functionally related genes, which can overlook broader, yet biologically meaningful, network context, particularly in highly interactive systems such as living organisms. As biological networks grow in complexity, the combinatorial space of possible multi-hop interactions expands rapidly, while human interpretive capacity remains fixed.
 
 While large language models (LLMs) can synthesize large volumes of information, frontier inference cost scales with exploration length and reasoning depth, limiting agentic deployment for long-horizon network traversal. This mismatch creates a scaling limit in biological mechanistic interpretation: rich relational structures can be computed, but downstream synthesis remains constrained by human bandwidth and model cost. Consequently, the speed, breadth, and contextual depth of mechanistic discovery are limited, particularly for complex traits, polygenic diseases, and multi-layer regulatory systems.
 
@@ -72,13 +72,7 @@ Christiano et al. introduced deep reinforcement learning from human feedback (RL
 While preference optimization aligns LLMs to pairwise judgements, policy gradient methods optimize directly against scalar rewards over rollouts, supporting online learning across a wide range of tasks. Proximal policy optimization (PPO) \cite{schulman2017proximal} was introduced as a simple, efficient, and scalable alternative to TRPO \cite{schulman2015trust}, using a clipped probability ratio term to form a pessimistic surrogate of performance, preventing excessively large policy updates. In RLHF \cite{ouyang2022instructgpt}, this is paired with a token-wise KL penalty against a reference policy to anchor the model to its supervised initialization. Group relative policy optimization (GRPO) \cite{shao2024deepseekmath} builds on PPO, computing the advantage term by measuring the deviation of outputs from a group mean rather than using a trained value model. Removing critic network roughly halves the trainable parameters of relative to PPO, making large-scale training more feasible. DeepSeek-R1 \cite{guo2025deepseek} demonstrated that GRPO with verifiable rewards can elicit emergent long-horizon reasoning behaviors at frontier scale. Having no learned critic, group-normalized advantages, and compatibility with deterministic verifiable rewards makes GRPO conducive to \textbf{\textsc{Mentor-RL}}, where the reward is a structured, schema-grounded signal over multi-hop biological graph exploration. 
 
 \subsubsection{RL for Tool-Augmented Agents}
-\begin{itemize}
-    \item WebGPT — Nakano et al. 2021 (RLHF + tool use, foundational)
-    \item ToolLLM — Qin et al. 2024 (SFT baseline; DFSDT tree search at inference)
-    \item Agent Q — Putta et al. 2024 (MCTS + self-critique + off-policy DPO; closest precedent)
-    \item Beyond Human Data / ReST$^{EM}$ — Singh et al. 2024 (verifier-grounded self-training)
-    \item Search-R1 / R1-Searcher — 2025 (GRPO with search tools; recent)
-\end{itemize}
+In addition to its usefulness for general LLM training, RL and adjacent post-training methods has been extensively used to train LLM agents in tool use scenarios. WebGPT \cite{nakano2021webgpt} used a fine-tuning, PPO, and rejection sampling pipeline to train a language agent for browser use and citation-backed question answering. ReST$^{EM}$ \cite{singh2023beyond} frames self-training from synthetic data as expectation maximization, demonstrating that fine-tuning on model-generated, filtered data can outperform fine-tuning on human-labeled datasets in verifiable reward settings. Toolformer \cite{schick2023toolformer} demonstrated that LLMs can use external tools by sampling candidate API calls during pretraining and retaining those whose outputs reduce the loss on subsequent tokens. Building on this self-supervised paradigm, ToolLLM \cite{qin2023toolllm} trained a language model for multi-step, multi-tool question answering on over 16,000 APIs with imitation learning. Agent-Q \cite{putta2024agent} utilizes monte carlo tree search and process supervision to construct model trajectories, which are used to optimize an agent via DPO. These works provide methodological precedent for \textbf{\textsc{Mentor-RL}}; however, we utilize on-policy trajectory generation and deterministic  rewards grounded in expert-curated targets as a source of truth. 
 
 \section{Proposed Methodology}\label{sec:methods}
 Our methodology has five components. Sections \ref{sec:agent_loop} and \ref{sec:task} formalize the iterative exploration loop and the mechanistic interpretation task. Sections \ref{sec:data} and \ref{sec:trajectory} describe dataset construction and environment design. Sections \ref{sec:rewards}, \ref{sec:training}, and \ref{sec:curriculum} define the training pipeline, reward functions, and curriculum. Finally, Section \ref{sec:eval} describes evaluation and benchmarking.
@@ -108,31 +102,7 @@ r_t, a_t \sim \pi_{\theta}^{\mathrm{act}}(\cdot \mid D_t), \qquad
 o_t = \varepsilon(a_t), \qquad
 I_{t+1}, S_{t+1}, z_t \sim \pi_{\theta}^{\mathrm{verify}}(\cdot \mid r_t, a_t, o_t, D_t),
 \]
-where $r_t$ is the agent's textual reasoning or subgoal, $a_t$ is the optional tool action, and $o_t$ is the observation returned by the deterministic runtime $\varepsilon$, with $\varepsilon(\varnothing)=\varnothing$ by convention. The policies $\pi_{\theta}^{\mathrm{act}}$ and $\pi_{\theta}^{\mathrm{verify}}$ denote two prompting modes of the same underlying model, sharing weights so that biological vocabulary and tool-use competence learned in one mode transfers to the other. We treat the risk that the verifier collapses as a monitoring concern during training, discussed in Section \ref{sec:limitations}. At each decision point, the pair $(I_t, S_t)$ represents the current mechanistic hypothesis, with $I_t$ serving as a human-readable view and $S_t$ as a machine-readable view of the same underlying state.
-
-% MENTOR-RL Agent Loop PseudoCode
-\begin{algorithm}[t]
-\caption{\textbf{\textsc{Mentor-RL}} Agent Loop}
-\begin{algorithmic}[1]
-\State Initialize $I_0, S_0$ from query $q$ and user evidence $e^{\text{user}}$
-\State $T \gets 0$
-\For{$t = 0, 1, \dots, T_{\max}-1$}
-    \State $D_t \gets (q, e^{\text{user}}, I_t, S_t)$
-    \State $(r_t, a_t) \sim \pi_\theta^{\mathrm{act}}(\cdot \mid D_t)$
-    \If{$a_t \neq \varnothing$}
-        \State $o_t \gets \varepsilon(a_t)$
-    \Else
-        \State $o_t \gets \varnothing$
-    \EndIf
-    \State $(I_{t+1}, S_{t+1}, z_t) \sim \pi_\theta^{\mathrm{verify}}(\cdot \mid r_t, a_t, o_t, D_t)$
-    \State $T \gets t+1$
-    \If{$z_t = \texttt{stop}$}
-        \State \textbf{break}
-    \EndIf
-\EndFor
-\State \Return final interpretation $I_T$ and structured state $S_T$
-\end{algorithmic}
-\end{algorithm}
+where $r_t$ is the agent's textual reasoning or subgoal, $a_t$ is the optional tool action, and $o_t$ is the observation returned by the deterministic runtime $\varepsilon$, with $\varepsilon(\varnothing)=\varnothing$ by convention. The policies $\pi_{\theta}^{\mathrm{act}}$ and $\pi_{\theta}^{\mathrm{verify}}$ denote two prompting modes of the same underlying model, sharing weights so that biological vocabulary and tool-use competence learned in one mode transfers to the other. We treat the risk that the verifier collapses as a monitoring concern during training, discussed in Section \ref{sec:limitations}. At each decision point, the pair $(I_t, S_t)$ represents the current mechanistic hypothesis, with $I_t$ serving as a human-readable view and $S_t$ as a machine-readable view of the same underlying state. The full agent loop algorithm is detailed in Appendix \ref{app:agent-loop-alg}.
 
 \begin{figure}[htb!]
     \centering
@@ -637,6 +607,39 @@ Several limitations constrain the scope of the claims we can make with this work
 
 \subsection{Conclusion}
 We have presented \textbf{\textsc{Mentor-RL}}, a proposed open-source reasoning agent for biological mechanistic interpretation, trained through a staged pipeline of supervised fine-tuning, direct preference optimization over shared-prefix trajectory branches, and policy gradient optimization for long-horizon exploration. The training environment grounds rewards in deterministic graph operators and CORUM-derived targets, removing proprietary judges from the loop and exposing every optimization signal as a reproducible, structured quantity. We view \textbf{\textsc{Mentor-RL}} as one instance of a broader methodological pattern: domain-specialized scientific agents whose behavior is shaped by deterministic structured-state rewards over curated ground truth, rather than by semantic evaluation from frontier models. If successful, this pattern offers a route toward scientific AI systems that are cheap to deploy, auditable in their reasoning, and reproducible across research groups without centralized model access.
+
+\appendix
+\renewcommand{\thechapter}{\alph{chapter}}
+\renewcommand{\thesection}{\Roman{section}}
+\renewcommand{\thesubsection}{\fnsymbol{subsection}}
+\section{Agent Loop Algorithm}\label{app:agent-loop-alg}
+% MENTOR-RL Agent Loop PseudoCode
+\begin{algorithm}[t]
+\caption{\textbf{\textsc{Mentor-RL}} Agent Loop}
+\begin{algorithmic}[1]
+\State Initialize $I_0, S_0$ from query $q$ and user evidence $e^{\text{user}}$
+\State $T \gets 0$
+\For{$t = 0, 1, \dots, T_{\max}-1$}
+    \State $D_t \gets (q, e^{\text{user}}, I_t, S_t)$
+    \State $(r_t, a_t) \sim \pi_\theta^{\mathrm{act}}(\cdot \mid D_t)$
+    \If{$a_t \neq \varnothing$}
+        \State $o_t \gets \varepsilon(a_t)$
+    \Else
+        \State $o_t \gets \varnothing$
+    \EndIf
+    \State $(I_{t+1}, S_{t+1}, z_t) \sim \pi_\theta^{\mathrm{verify}}(\cdot \mid r_t, a_t, o_t, D_t)$
+    \State $T \gets t+1$
+    \If{$z_t = \texttt{stop}$}
+        \State \textbf{break}
+    \EndIf
+\EndFor
+\State \Return final interpretation $I_T$ and structured state $S_T$
+\end{algorithmic}
+\end{algorithm}
+
+\section{CORUM Corpus Creation Algorithm}\label{app:corum-corpus-alg}
+
+\section{Trajectory Generation Algorithm}\label{app:traj-gen-alg}
 
 \printbibliography
 \end{document}
