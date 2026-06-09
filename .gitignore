@@ -1,0 +1,16 @@
+AGENTS.md
+CLAUDE.md
+*.aux
+*.log
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.out
+*.toc
+*.bbl
+*.blg
+*.bcf
+*.lof
+*.lot
+*.nlo
+*.run.xml
