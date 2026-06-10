@@ -55,10 +55,10 @@ We make five contributions:
 \section{Background and Related Work}
 \subsection{Biological Networks and Mechanistic Ground Truth}
 \subsubsection{Systems Biology and Mechanistic Discovery}
-Systems biology examines biological function by studying interactions between molecular entities such as genes, proteins, and metabolites, rather than analyzing their individual properties~\cite{hartwell1999molecular, barabasi2004network}. A central goal is identifying \textit{modules}, or groups of functionally related entities, and to characterize the mechanisms that underlie their behavior. Because network interactions can span multiple scales and regulatory layers, modern systems biology relies on multiplex and multilayer network representations to capture context-specific relationships~\cite{barabasi2011network, ideker2012differential}. Module-level analysis has become a foundational tool for identifying disease mechansisms, prioritzing drug targets, and interpreting polygenic phenotypes~\cite{menche2015uncovering}, motivating the need for curated, mechanistic ground truth data against which computational methods can be developed and evaluated.
+Systems biology examines biological function by studying interactions between molecular entities such as genes, proteins, and metabolites, rather than analyzing their individual properties~\cite{hartwell1999molecular, barabasi2004network}. A central goal is identifying \textit{modules}, or groups of functionally related entities, and to characterize the mechanisms that underlie their behavior. Because network interactions can span multiple scales and regulatory layers, modern systems biology relies on multiplex and multilayer network representations to capture context-specific relationships~\cite{barabasi2011network, ideker2012differential}. Module-level analysis has become a foundational tool for identifying disease mechanisms, prioritizing drug targets, and interpreting polygenic phenotypes~\cite{menche2015uncovering}, motivating the need for curated, mechanistic ground truth data against which computational methods can be developed and evaluated.
 
 \subsubsection{Curated Interaction Maps}
-Large-scale systems biology depends on curated molecular interaction databases that capture experimentally supported relationships at varying levels of resolution. Creating high-coverage, expert-annotated networks is crucial for enabling large-scale systems biology studies and encouraging mechanistic discovery.  BioGRID~\cite{oughtred2021biogrid} catalogs physical and genetic interactions across humans and model organisms from both low- and high-throughput studies. Reactome~\cite{reactome, gillespie2022reactome} provides manually curated, reaction-level pathway models for human biology. While both resources supply rich interaction evidence, neither organizes proteins into functional groups with verified co-membership. The CORUM database~\cite{giurgiu2019corum, tsitsiridis2023corum} fills this gap by curating experimentally verified mammalian protein complexes exclusively from low-throughput experiments. By providing verified group membership, curated interaction maps serve as a high confidence reference for mechanistic relationships. These resources, however, cover only a small, well-studied fraction of the interactome and are costly to extend, motivating computationally derived module strucutre that scales across the entire genome. 
+Large-scale systems biology depends on curated molecular interaction databases that capture experimentally supported relationships at varying levels of resolution. Creating high-coverage, expert-annotated networks is crucial for enabling large-scale systems biology studies and encouraging mechanistic discovery.  BioGRID~\cite{oughtred2021biogrid} catalogs physical and genetic interactions across humans and model organisms from both low- and high-throughput studies. Reactome~\cite{reactome, gillespie2022reactome} provides manually curated, reaction-level pathway models for human biology. While both resources supply rich interaction evidence, neither organizes proteins into functional groups with verified co-membership. The CORUM database~\cite{giurgiu2019corum, tsitsiridis2023corum} fills this gap by curating experimentally verified mammalian protein complexes exclusively from low-throughput experiments. By providing verified group membership, curated interaction maps serve as a high confidence reference for mechanistic relationships. These resources, however, cover only a small, well-studied fraction of the interactome and are costly to extend, motivating computationally derived module structure that scales across the entire genome. 
 
 \subsubsection{Genome-Wide Module Discovery with MENTOR}
 A complementary approach to curated databases is deriving mechanistic ground truth directly from network structure. \textsc{MENTOR} (Multiplex Embedding of Networks for Team-Based Omics Research)~\cite{mentor} computes random-walk-restart (RWR) embeddings for every gene across the layers of a multiplex, converts the embeddings into pairwise distances, and applies hierarchical clustering to produce a genome-wide dendrogram in which leaves are genes and internal nodes represent successively coarser functional groups. Selecting subtrees from this dendrogram yields a module whose granularity is controlled by the merge height at which the cut is taken, producing a nested family of modules that span the entire gene universe of the underlying network. Unlike curated databases, \textsc{Mentor} provides module structure at genome scale and for arbitrary multiplexes, including tissue- and context-specific networks, trading literature-based verification for broad coverage and mechanistic coherence.
@@ -73,20 +73,20 @@ In addition to deep learning's growing utility for biological discovery, neural 
 Despite this progress in model reasoning, probabilistic decoding and training data cutoffs still leave models prone to errors, including hallucination. In turn, equipping models with the ability to use external tools during training or inference provides a layer of deterministic verification and enables interaction with the outside world. Toolformer~\cite{schick2023toolformer} showed that self-supervised fine-tuning of tool calls yielded better performance with lower hallucination across several benchmarks, and Gorilla~\cite{patil2024gorilla} extended this paradigm to handling large API vocabularies with retrieval. ReAct~\cite{yao2022react} showed that combining reasoning techniques with tool-based actions improved complex reasoning performance, and PAL~\cite{gao2023pal} converted reasoning into programs, showing improved performance on computational tasks. These works demonstrate the power of combined reasoning and tool use for complex, multi-step problem solving, but their applications to scientific reasoning remain underexplored.
 
 \subsubsection{Agentic Architectures with Verification}
-While reasoning and tool use techniques improve task solving capability, they lack inherent verification mechanism, which is crucial for making factual scientific claims. Several works have explored self-verification through various methods. Self-Refine~\cite{madaan2023selfrefine} and Reflexion~\cite{shinn2023reflexion} both define an iterative reflection loop without weight updates to improve answer quality; while self-refine uses single model to generate, critique, and refine its own output, Reflexion utilizes sequential refinement, storing reflections in a persistent verbal memory. Self-RAG~\cite{asai2023selfrag} fine-tunes a language model to emit reflection tokens that govern when to retrieve passages and how to assess their relevance and support. Eubiota~\cite{eubiota} extends the self-verification process to multi-agent systems, using a dedicated verifier with separate weights to check the groundedness and factuality of other agent outputs. These approaches establish self-verification as a core component of agentic systems, but none combine a shared-weight actor-verifier paradigm with reinforcement learning over deterministic, structured state rewards, which we develop in Section~\ref{sec:methods}.
+While reasoning and tool use techniques improve task solving capability, they lack an inherent verification mechanism, which is crucial for making factual scientific claims. Several works have explored self-verification through various methods. Self-Refine~\cite{madaan2023selfrefine} and Reflexion~\cite{shinn2023reflexion} both define an iterative reflection loop without weight updates to improve answer quality; while Self-Refine uses a single model to generate, critique, and refine its own output, Reflexion utilizes sequential refinement, storing reflections in a persistent verbal memory. Self-RAG~\cite{asai2023selfrag} fine-tunes a language model to emit reflection tokens that govern when to retrieve passages and how to assess their relevance and support. Eubiota~\cite{eubiota} extends the self-verification process to multi-agent systems, using a dedicated verifier with separate weights to check the groundedness and factuality of other agent outputs. These approaches establish self-verification as a core component of agentic systems, but none combine a shared-weight actor-verifier paradigm with reinforcement learning over deterministic, structured state rewards, which we develop in Section~\ref{sec:methods}.
 
 \subsubsection{Agentic Gene Set Interpretation}
-LLM-based gene set interpretation has progressed from precomputed embeddings to fully agentic systems. GenePT~\cite{chen2025simple} employs GPT-4 to create gene-level and cell-level embeddings from natural language for use in downstream interpretation tasks. GeneAgent~\cite{wang2025geneagent} utilizes a multi-step GPT-4 pipeline with self-verification and retrieval from biological databases to provide a human-readable interpretations for experimentally derived gene lists. \textbf{\textsc{Mentor-IA}}~\cite{mentor-ia} extends this paradigm by creating separate agents for mechanistic interpretation subtasks, such as literature search, enrichment analysis, network analysis, and verification, unifying these outputs into a single mechanistic summary. Eubiota~\cite{eubiota} functions similarly to \textbf{\textsc{Mentor-IA}}, but with a focus on the human gut microbiome. The authors partially train a planning agent with GRPO while keeping proprietary model-powered subagents frozen. While these works share \textbf{\textsc{Mentor-RL}}'s agentic framing for mechanistic interpretation, none implements a fully trainable, end-to-end policy over verifiable rewards, which we introduce in Section~\ref{sec:methods}.
+LLM-based gene set interpretation has progressed from precomputed embeddings to fully agentic systems. GenePT~\cite{chen2025simple} employs GPT-4 to create gene-level and cell-level embeddings from natural language for use in downstream interpretation tasks. GeneAgent~\cite{wang2025geneagent} utilizes a multi-step GPT-4 pipeline with self-verification and retrieval from biological databases to provide a human-readable interpretation for experimentally derived gene lists. \textbf{\textsc{Mentor-IA}}~\cite{mentor-ia} extends this paradigm by creating separate agents for mechanistic interpretation subtasks, such as literature search, enrichment analysis, network analysis, and verification, unifying these outputs into a single mechanistic summary. Eubiota~\cite{eubiota} functions similarly to \textbf{\textsc{Mentor-IA}}, but with a focus on the human gut microbiome. The authors partially train a planning agent with GRPO while keeping proprietary model-powered subagents frozen. While these works share \textbf{\textsc{Mentor-RL}}'s agentic framing for mechanistic interpretation, none implements a fully trainable, end-to-end policy over verifiable rewards, which we introduce in Section~\ref{sec:methods}.
 
 \subsection{Reinforcement Learning for Long-Horizon Tool-Use}
 \subsubsection{Preference Optimization}
 Christiano et al. introduced deep reinforcement learning from human feedback (RLHF)~\cite{christiano2017rlhf}, replacing hand-specified reward functions with a value model trained on pairwise human preferences. This framework was extended by InstructGPT~\cite{ouyang2022instructgpt}, which applied RLHF to align large language model outputs with human preferences. Direct preference optimization~\cite{dpo} built on this work by deriving a mathematically equivalent objective that operates directly on preference pairs, only using the policy and a reference while foregoing the reward model. Azar et al. unified RLHF and DPO under $\Psi$PO, a general preference optimization framework, and introduced IPO to address DPO's tendency to overfit when observed preferences are deterministic or near-deterministic~\cite{azar2024general}. Hong et al. proposed ORPO, a single-stage alternative that merges preference alignment and SFT via an odds-ratio penalty, removing the need for a separate alignment stage~\cite{hong2024orpo}. While these methods carry varying tradeoffs, we elect to train \textbf{\textsc{Mentor-RL}} with DPO because our deterministic runtime supports scalable preference pair generation and the resulting checkpoint serves as a preference-aligned reference policy in the GRPO stage.
 
 \subsubsection{Policy Gradient and Group-Relative Methods}
-While preference optimization aligns LLMs to pairwise judgements, policy gradient methods optimize directly against scalar rewards over rollouts, supporting online learning across a wide range of tasks. Proximal policy optimization (PPO)~\cite{schulman2017proximal} was introduced as a simple, efficient, and scalable alternative to TRPO~\cite{schulman2015trust}, using a clipped probability ratio term to form a pessimistic surrogate of performance, preventing excessively large policy updates. In RLHF~\cite{ouyang2022instructgpt}, this is paired with a token-wise KL penalty against a reference policy to anchor the model to its supervised initialization. Group relative policy optimization (GRPO)~\cite{shao2024deepseekmath} builds on PPO, computing the advantage term by measuring the deviation of outputs from a group mean rather than using a trained value model. Removing critic network roughly halves the trainable parameters of relative to PPO, making large-scale training more feasible. DeepSeek-R1~\cite{guo2025deepseek} demonstrated that GRPO with verifiable rewards can elicit emergent long-horizon reasoning behaviors at frontier scale. Having no learned critic, group-normalized advantages, and compatibility with deterministic verifiable rewards makes GRPO conducive to \textbf{\textsc{Mentor-RL}}, where the reward is a structured, schema-grounded signal over multi-hop biological graph exploration. 
+While preference optimization aligns LLMs to pairwise judgments, policy gradient methods optimize directly against scalar rewards over rollouts, supporting online learning across a wide range of tasks. Proximal policy optimization (PPO)~\cite{schulman2017proximal} was introduced as a simple, efficient, and scalable alternative to TRPO~\cite{schulman2015trust}, using a clipped probability ratio term to form a pessimistic surrogate of performance, preventing excessively large policy updates. In RLHF~\cite{ouyang2022instructgpt}, this is paired with a token-wise KL penalty against a reference policy to anchor the model to its supervised initialization. Group relative policy optimization (GRPO)~\cite{shao2024deepseekmath} builds on PPO, computing the advantage term by measuring the deviation of outputs from a group mean rather than using a trained value model. Removing the critic network roughly halves the trainable parameters relative to PPO, making large-scale training more feasible. DeepSeek-R1~\cite{guo2025deepseek} demonstrated that GRPO with verifiable rewards can elicit emergent long-horizon reasoning behaviors at frontier scale. Having no learned critic, group-normalized advantages, and compatibility with deterministic verifiable rewards makes GRPO conducive to \textbf{\textsc{Mentor-RL}}, where the reward is a structured, schema-grounded signal over multi-hop biological graph exploration. 
 
 \subsubsection{RL for Tool-Augmented Agents}
-In addition to its usefulness for general LLM training, RL and adjacent post-training methods has been extensively used to train LLM agents in tool use scenarios. WebGPT~\cite{nakano2021webgpt} used a fine-tuning, PPO, and rejection sampling pipeline to train a language agent for browser use and citation-backed question answering. ReST$^{EM}$~\cite{singh2023beyond} frames self-training from synthetic data as expectation maximization, demonstrating that fine-tuning on model-generated, filtered data can outperform fine-tuning on human-labeled datasets in verifiable reward settings. Toolformer~\cite{schick2023toolformer} demonstrated that LLMs can use external tools by sampling candidate API calls during pretraining and retaining those whose outputs reduce the loss on subsequent tokens. Building on this self-supervised paradigm, ToolLLM~\cite{qin2023toolllm} trained a language model for multi-step, multi-tool question answering on over 16,000 APIs with imitation learning. Agent-Q~\cite{putta2024agent} utilizes monte carlo tree search and process supervision to construct model trajectories, which are used to optimize an agent via DPO. These works provide methodological precedent for \textsc{Mentor-RL}; however, we utilize on-policy trajectory generation and deterministic rewards grounded in network-derived targets as a source of truth. 
+In addition to its usefulness for general LLM training, RL and adjacent post-training methods have been extensively used to train LLM agents in tool-use scenarios. WebGPT~\cite{nakano2021webgpt} used a fine-tuning, PPO, and rejection sampling pipeline to train a language agent for browser use and citation-backed question answering. ReST$^{EM}$~\cite{singh2023beyond} frames self-training from synthetic data as expectation maximization, demonstrating that fine-tuning on model-generated, filtered data can outperform fine-tuning on human-labeled datasets in verifiable reward settings. Toolformer~\cite{schick2023toolformer} demonstrated that LLMs can use external tools by sampling candidate API calls during pretraining and retaining those whose outputs reduce the loss on subsequent tokens. Building on this self-supervised paradigm, ToolLLM~\cite{qin2023toolllm} trained a language model for multi-step, multi-tool question answering on over 16,000 APIs with imitation learning. Agent-Q~\cite{putta2024agent} utilizes Monte Carlo tree search and process supervision to construct model trajectories, which are used to optimize an agent via DPO. These works provide methodological precedent for \textsc{Mentor-RL}; however, we utilize on-policy trajectory generation and deterministic rewards grounded in network-derived targets as a source of truth. 
 
 \section{Proposed Methodology}\label{sec:methods}
 Our methodology has five components. Sections~\ref{sec:agent_loop} and~\ref{sec:task} formalize the iterative exploration loop and the mechanistic interpretation task. Sections~\ref{sec:data} and~\ref{sec:trajectory} describe dataset construction and environment design. Sections~\ref{sec:rewards},~\ref{sec:training}, and~\ref{sec:curriculum} define the training pipeline, reward functions, and curriculum. Finally, Section~\ref{sec:eval} describes evaluation and benchmarking.
@@ -184,29 +184,34 @@ We first construct a warm-start SFT subset from the \textbf{\textsc{Mentor-IA}} 
 
 We include tool-enabled (open-book) and tool-disabled (closed-book) questions, with open-book examples emphasized to promote schema-valid tool use and evidence grounding, and closed-book examples used to strengthen biological vocabulary and lightweight recall. To make this stage reproducible, API responses and database versions will be cached during dataset construction.
 
-To make the warm-start SFT stage concrete, we define a core tool vocabulary derived from the existing \textbf{\textsc{Mentor-IA}} infrastructure~\cite{mentor-ia} in Table~\ref{tbl:tools}, with each tool specified by its purpose, input schema, output schema, and training stage. Early SFT uses only this core tool set to teach schema-valid biological tool use before larger graph-exploration operators are introduced during DPO and online RL.
+To make the warm-start SFT stage concrete, we define a core tool vocabulary derived from the existing \textbf{\textsc{Mentor-IA}} infrastructure~\cite{mentor-ia} in Table~\ref{tbl:tools}. Early SFT emphasizes schema-valid biological annotation and enrichment calls, while graph-exploration and RWR++ operators are introduced during DPO and online RL.
 
-\begin{table}[ht]
+\begin{table}[p]
 \centering
-\caption{Tool vocabulary for the \textbf{\textsc{Mentor-RL}} agent. Each tool is specified by its purpose, input schema, and the training stage at which it is introduced. SFT uses only the gene metadata retrieval tool; all graph-exploration operators are introduced during DPO and remain available through online RL.}
+\caption{Tool vocabulary for the \textbf{\textsc{Mentor-RL}} agent. Related RWR++ calls are grouped by function while preserving the model-facing tool names.}
 \label{tbl:tools}
-\begin{tabularx}{\textwidth}{l Y Y l}
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{0.95}
+\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{0.34\textwidth} >{\raggedright\arraybackslash}X >{\raggedright\arraybackslash}p{0.25\textwidth} >{\raggedright\arraybackslash}p{0.08\textwidth}@{}}
 \toprule
-\textbf{Tool} & \textbf{Purpose} & \textbf{Input schema} & \textbf{Stage} \\
+\textbf{Tool(s)} & \textbf{Purpose} & \textbf{Primary inputs} & \textbf{Stage} \\
 \midrule
-\texttt{query\_mygene} & Retrieve gene metadata, GO annotations, pathway membership, and literature-linked summaries from MyGene.info & \texttt{query}: gene identifier (name, symbol, or Ensembl ID); \texttt{fields}: list from \{\texttt{name}, \texttt{symbol}, \texttt{ensembl}, \texttt{summary}, \texttt{other\_names}, \texttt{pathways}, \texttt{go\_bp}, \texttt{go\_cc}, \texttt{go\_mf}\} & SFT \\
+\texttt{query\_mygene} & Gene metadata, GO terms, pathways, and summaries & \texttt{query}; requested \texttt{fields} & SFT \\
 \midrule
-\texttt{get\_neighbors} & Retrieve direct neighbors of a gene in one or more multiplex layers & \texttt{gene}: gene identifier; \texttt{layers}: list of layer names (optional; defaults to all) & DPO, RL \\
+\texttt{enrich\_gene\_set} & Functional enrichment over a candidate gene set & \texttt{genes}; \texttt{background}; \texttt{top\_k}; threshold & SFT, DPO, RL \\
 \midrule
-\texttt{shortest\_paths} & Compute shortest paths between genes across the multiplex or a selected set of layers, returning paths with layer provenance & \texttt{source\_genes}: list of gene identifiers; \texttt{target\_genes}: list of gene identifiers; \texttt{layers}: list of layer names (optional; defaults to all) & DPO, RL \\
+\texttt{get\_neighbors}; \texttt{induce\_subgraph} & Local native graph and induced-subgraph evidence & gene or gene-set identifiers; layers & DPO, RL \\
 \midrule
-\texttt{rwr} & Run random walk with restart from one or more seed genes over the multiplex (optionally restricted to selected layers) and return ranked node scores with provenance & \texttt{seed\_genes}: list of gene identifiers; \texttt{layers}: list of layer names (optional; defaults to all); \texttt{top\_k}: number of results to return & DPO, RL \\
+\texttt{rwr}; \texttt{rwr\_loe}; \texttt{shortest\_paths} & RWR++ expansion, leave-one-out relatedness, and path evidence & seed, query, source, or target genes; layers; \texttt{top\_k} & DPO, RL \\
 \midrule
-\texttt{rwr\_loe} & Rank a set of query genes by their random-walk-with-restart affinity to the seed genes, supporting relatedness and refinement decisions & \texttt{seed\_genes}: list of gene identifiers; \texttt{query\_genes}: list of gene identifiers; \texttt{top\_k}: number of results to return & DPO, RL \\
+\texttt{get\_rank}; \texttt{get\_distance}; \texttt{get\_spearman}; \texttt{get\_pearson}; \texttt{get\_dot\_similarity} & Rank, distance, and vector-similarity comparisons & paired genes; metric; layers & DPO, RL \\
 \midrule
-\texttt{induce\_subgraph} & Extract the subgraph induced by a specified gene set, returning edges, weights, and layer provenance & \texttt{genes}: list of gene identifiers; \texttt{layers}: list of layer names (optional; defaults to all) & DPO, RL \\
+\texttt{get\_rank\_vector\_summary}; \texttt{get\_encoding\_summary} & Compact rank-vector and encoding summaries & seed or query genes; layers; \texttt{top\_k} & DPO, RL \\
 \midrule
-\texttt{enrich\_gene\_set} & Run functional enrichment over a candidate gene set against a background universe and return ranked enriched terms with significance & \texttt{genes}: list of gene identifiers; \texttt{background}: background gene set; \texttt{top\_k}: number of terms to return; \texttt{user\_threshold}: significance cutoff in $(0,1]$ & DPO, RL \\
+\texttt{get\_gene\_layers}; \texttt{get\_nodes\_by\_layer}; \texttt{get\_layer\_stats}; \texttt{get\_path\_layer\_counts}; \texttt{get\_component\_summary} & Layer membership, layer statistics, path support, and components & genes or layers, depending on query & DPO, RL \\
+\midrule
+\texttt{get\_seed\_essentiality}; \texttt{get\_layer\_ablation}; \texttt{get\_node\_perturbation} & Stability, ablation, and perturbation analyses & seed or perturbation genes; layers; \texttt{top\_k} & DPO, RL \\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -216,11 +221,11 @@ After constructing the warm-start SFT dataset, we create a \textsc{Mentor}-deriv
 
 For each module $C_{\text{module}}$ of size $n$, we deterministically materialize up to four task instances, one per case in Section~\ref{sec:task}. This ensures that all four task types are represented for as many modules as possible rather than sampled independently. The \texttt{explanation} instance uses the full module as input, $C^{\text{in}} = C_{\text{module}}$. The \texttt{recovery} instance drops $k_{\text{drop}}$ genes from the module, $C^{\text{in}} = C_{\text{module}} \setminus G_{\text{drop}}$, and the \texttt{refinement} instance adds $k_{\text{add}}$ noise genes, $C^{\text{in}} = C_{\text{module}} \cup G_{\text{add}}$. In both the recovery and refinement cases, the hidden target remains $C = C_{\text{module}}$. The number of genes added or dropped scales with the task difficulty and module size, so that harder instances perturb a larger fraction of the module. The \texttt{none} instance constructs a pseudo-module of unrelated genes as input with hidden target $C = \varnothing$.
 
-Noise and \texttt{none} genes are drawn from difficulty-modulated \textit{dendrogram distance bands}, which are defined by walking up the module's ancestry in the tree, so that difficulty controls how topologically close the distractors are to the module. Additionally, \texttt{none} genes are constrained to be conflict-free (i.e. they do are not related to each other), so that sample genes do not form a coherent module themselves. All selection is deterministic given a fixed seed, making the corpus reproducible. The resulting \textsc{Mentor}-based corpus provides supervision for schema-valid tool use and for the terminal outpus of Section~\ref{sec:task}.
+Noise and \texttt{none} genes are drawn from difficulty-modulated \textit{dendrogram distance bands}, which are defined by walking up the module's ancestry in the tree, so that difficulty controls how topologically close the distractors are to the module. Additionally, \texttt{none} genes are constrained to be conflict-free (i.e. they are not related to each other), so that sampled genes do not form a coherent module themselves. All selection is deterministic given a fixed seed, making the corpus reproducible. The resulting \textsc{Mentor}-based corpus provides supervision for schema-valid tool use and for the terminal outputs of Section~\ref{sec:task}.
 
 \begin{algorithm}[t]
 \caption{Creation of the \textsc{Mentor}-derived module training corpus}
-\label{alg:corum-corpus}
+\label{alg:mentor-module-corpus}
 \begin{algorithmic}[1]
 
 % initialize modules from the dendro, parsing into train/val/test splits
@@ -250,7 +255,7 @@ Noise and \texttt{none} genes are drawn from difficulty-modulated \textit{dendro
 
 
 \subsubsection{Graph Environment and Runtime}\label{sec:graph-runtime}
-Each \textsc{Mentor}-derived task instance is paired with a graph environment defined over the same canonical gene universe as the in-house HumanNet brain multiplex, of which our \textsc{Mentor} modules are a labeled subset. The sampled input set $C^{\text{in}}$ initializes the agent's graph anchors, while the hidden target $C$ defines the supervisory signal.
+Each \textsc{Mentor}-derived task instance is paired with a graph environment defined over the same canonical gene universe as the in-house brain multiplex, from which our \textsc{Mentor} modules are derived. The sampled input set $C^{\text{in}}$ initializes the agent's graph anchors, while the hidden target $C$ defines the supervisory signal.
 
 To interface the graph environment with the training pipeline, we use a compiled native multiplex library exposed to Python through \texttt{ctypes} bindings~\cite{cpp}. Training, rollout, and optimization code are implemented in Python~\cite{python}, while graph storage and graph operations are handled by the native runtime for efficient execution on large multiplexes. Multiplex networks are persisted as raw, CSR-style binary stores described by JSON manifests; all graph input and output is binary, with the manifest carrying the layer names, node, and build metadata needed to load the graph.
 
@@ -277,10 +282,10 @@ Using the \textsc{Mentor}-derived module corpus and deterministic runtime define
     \State $(I_0, S_0) \gets \mathrm{InitState}(q, e^\text{user}, C^\text{in})$.
     \State $\tau^\star \gets [\ ]$, \quad $\mathcal{P} \gets [\ ]$, \quad $\mathcal{F} \gets [\ ]$, \quad $T \gets 0$
     
+    \State $z_{-1} \gets \texttt{continue}$
+
     % begin traj loop
     \For{$t = 0, 1, \dots, T_{\max} - 1$}
-        \State z_{-1} \gets \texttt{continue}
-
         % check for stop case (budget/continuation)
         \If{$z_{t-1} = \texttt{stop}$ \textbf{or} $\mathrm{budget}(S_t) \le 0$} \textbf{break} \EndIf
         
@@ -323,7 +328,7 @@ Using the \textsc{Mentor}-derived module corpus and deterministic runtime define
 \end{algorithm}
 
 \subsubsection{Shared-prefix Trajectory Synthesis}\label{sec:shared-prefix}
-Given a sampled task and initialized state, we sample multiple action candidates $(r_{t,i}, a_{t,i})$ given the current decision context $D_t$ and execute valid tool calls in the deterministic graph runtime. To ensure that candidates with the same prefix explore genuinely distinct regions of the action space, we use verbalized sampling based on the task type. For example, recovery prompts bias candidates towards random-walk expansion, neighborhood expansion, subgraph validation, or a direct decision, while insufficient evidence (\texttt{none}) prompts direct the model towards disconfirming graph evidence. When a sampling round for recovery or refinements tasks fails to produce valid tool calls, we issue a tool-coverage retry that requires a valid graph operator whenever one can be formed, which prevents the branch pool from degenerating into tool-free continuations. Conditioned on each candidate action and observation, the same policy then samples multiple verification candidates, yielding a tree of candidate next states rooted at a shared prefix. The branched sampling scheme is visualized in Figure~\ref{fig:shared-prefix}.
+Given a sampled task and initialized state, we sample multiple action candidates $(r_{t,i}, a_{t,i})$ given the current decision context $D_t$ and execute valid tool calls in the deterministic graph runtime. To ensure that candidates with the same prefix explore genuinely distinct regions of the action space, we use verbalized sampling based on the task type. For example, recovery prompts bias candidates towards random-walk expansion, neighborhood expansion, subgraph validation, or a direct decision, while insufficient evidence (\texttt{none}) prompts direct the model towards disconfirming graph evidence. When a sampling round for recovery or refinement tasks fails to produce valid tool calls, we issue a tool-coverage retry that requires a valid graph operator whenever one can be formed, which prevents the branch pool from degenerating into tool-free continuations. Conditioned on each candidate action and observation, the same policy then samples multiple verification candidates, yielding a tree of candidate next states rooted at a shared prefix. The branched sampling scheme is visualized in Figure~\ref{fig:shared-prefix}.
 
 \begin{figure}[h!]
     \centering
@@ -355,7 +360,7 @@ At inference time, users provide a natural language query $q$ alongside optional
     \item structured annotations such as GO terms, pathway labels, or expression data from prior analysis.
 \end{enumerate}
 
-During training, we simulate this variability by generating diverse queries and evidence configurations from module metadata. For each sampled task $(C^{\text{in}}, C, C_{\text{type}})$, we sample a query from task-type-specific templates and an evidence mode $\rho \in \{\texttt{minimal}, \texttt{graph}\}$ that controls which evidence types are provided to the agent. Table~\ref{tbl:query-templates} defines representative query templates and compatible evidence modes for each task type. To promote phrasing diversity, we use an LLM to paraphrase each template query into natural language variants conditioned on the gene symbols of the sampled module. All generated queries and evidence configurations are cached during dataset construction for reproducibility.
+During training, we simulate this variability by generating diverse queries and evidence configurations from module metadata. For each sampled task $(C^{\text{in}}, C, C_{\text{type}})$, we sample a query from task-type-specific deterministic templates and an evidence mode $\rho \in \{\texttt{minimal}, \texttt{graph}\}$ that controls which evidence types are provided to the agent. Table~\ref{tbl:query-templates} defines representative query templates and compatible evidence modes for each task type. All generated queries and evidence configurations are cached during dataset construction for reproducibility. Table~\ref{tbl:query-templates} defines representative query templates and compatible evidence modes for each task type. To promote phrasing diversity, we use an LLM to paraphrase each template query into natural language variants conditioned on the gene symbols of the sampled module. All generated queries and evidence configurations are cached during dataset construction for reproducibility.
 
 \begin{table}[ht]
 \centering
@@ -384,7 +389,7 @@ We define all training-time scores over structured state transitions, determinis
 We define local branch scoring for DPO as 
 
 \begin{equation}\label{eqn:local-reward}
-    s^{local}_{t,i,j} = w_s\, s^{schema} + w_c\, \Delta s^{complex} + w_m\, \Delta s^{mech} - w_e\, p^{eff} - p^{mismatch}
+    s^{local}_{t,i,j} = w_s\, s^{schema} + w_c\, \Delta s^{module} + w_m\, \Delta s^{mech} - w_e\, p^{eff} - p^{mismatch}
 \end{equation}
 
 where $\Delta s^{mech}$ is the evidence-grounded mechanistic quality delta. Additionally, mechanistic quality is clamped to be non-positive when the candidate degrades the predicted group relative to the task type (e.g. by adding noise genes during recovery or removing true members during refinement), and $p^{mismatch}$ penalizes an \texttt{explanation} candidate that reduces recovery of an already-complete module.
@@ -394,12 +399,27 @@ We define $s^{schema}_{t,i,j}$ as a binary indicator that equals 1 if the candid
    s^{schema}_{t,i,j} = \mathbf{1}(\text{SchemaValid}(c_{t,i,j})).
 \end{equation}
 
-We use $\Delta s_{complex}$ to measure the change in complex membership accuracy from step $t$ to $t+1$. We define this metric as a composite:
-\begin{multline}\label{eqn:complex-score}
-    \Delta s^{complex}_{t,i,j} = \alpha(J(G_{t+1,i,j}, C) - J(G_{t,i,j}, C)) + \\ \beta (P(G_{t+1,i,j}, C) - P(G_{t,i,j}, C)) + \gamma (R(G_{t+1,i,j}, C) - R(G_{t,i,j}, C)),
-\end{multline}
+We use $\Delta s_{module}$ to measure the change in module membership accuracy from step $t$ to $t+1$. Because the runtime state may contain multiple predicted groups, we first score a state by the best-matched predicted group:
 
-where $J$, $P$, and $R$ denote Jaccard, precision, and recall respectively, the weights $\alpha, \beta, \gamma$ are set per task type. Recovery upweights recall ($\alpha,\beta,\gamma = 0.2, 0.2, 0.6$) to reward found members, refinement upweights precision ($0.2, 0.6, 0.2$) to penalize retained noise, and explanation weights them equally ($\tfrac{1}{3}$ each). The membership score is computed over the best-matched predicted group, supporting the multiple-groups case.
+\begin{equation}\label{eqn:module-state-score}
+    s^{module}(z; C, C_{\text{type}}) =
+    \max_{G \in \mathcal{G}(z)}
+    \left[
+        \alpha J(G, C) + \beta P(G, C) + \gamma R(G, C)
+    \right],
+\end{equation}
+
+where $\mathcal{G}(z)$ denotes the set of predicted groups in state $z$, with an empty group used when no prediction is present. We then define the local module improvement as
+
+\begin{equation}\label{eqn:module-score}
+        \Delta s^{module}_{t,i,j}
+    =
+    s^{module}(z_{t+1,i,j}; C, C_{\text{type}})
+    -
+    s^{module}(z_t; C, C_{\text{type}}).
+\end{equation}
+
+where $J$, $P$, and $R$ denote Jaccard, precision, and recall respectively, the weights $\alpha, \beta, \gamma$ are set per task type. Recovery upweights recall ($\alpha,\beta,\gamma = 0.2, 0.2, 0.6$) to reward found members, refinement upweights precision ($0.2, 0.6, 0.2$) to penalize retained noise, and explanation weights them equally ($\tfrac{1}{3}$ each). This best-group formulation supports the multiple-groups state representation while keeping the hidden target single-module for scoring.
 
 We define the mechanism quality of a state as an evidence-grounded score $m_t \in [0,1]$. From the evidence log, we extract three support signals: enrichment support $e_t$, annotation support $g_t$ (from \texttt{query\_mygene}), and network support $u_t$, each $\in [0,1]$. We define a consensus term $\kappa_t = \max(e_t, g_t)$, a cross-tool agreement term $\chi_t = \min(e_t, g_t)$, an evidence strength term $\sigma_t = \max(e_t,\ 0.75\,g_t,\ 0.5\,u_t)$, and an annotation-only strength term $\sigma^{\text{ann}}_t = \max(e_t,\ 0.75\,g_t)$. We additionally compute a grounding term $\gamma_t$ (claim entities are supported by observed evidence), a specificity term $\psi_t$ (vague or generic claims are penalized), a stability term $b_t$ (enrichment consistency across query subsets), and a discounted network-agreement term $\hat{u}_t = u_t$ if $\kappa_t > 0$ and $0.35\,u_t$ otherwise. An abstention term $\alpha_t$ rewards withholding a claim under weak support: $\alpha_t = 1 - \sigma_t$ when the state abstains (relationship status is \texttt{insufficient\_support} or an abstaining claim), $0$ when an unsupported claim is asserted ($\sigma_t \le 0.05$), and $0.5$ otherwise.
 
@@ -429,20 +449,20 @@ with $w_{rel} = 0.6$ and $w_{abs} = 0.4$. This rewards the agent both for declar
 Unlike DPO, which compares local same-prefix branches, policy gradient methods require a scalar reward for a completed rollout. We therefore define a terminal reward over the final structured state and trajectory log:
 
 \begin{equation}\label{eqn:terminal-reward}
-    R_T = w^T_s s^T_{schema} +w^T_{abs} s^{T}_{complex} + w^T_{c} \Delta s^{T}_{complex} + w^T_{mabs} s^T_{mech} + w^T_{m} \Delta s^{T}_{mech} - w^T_e p^{T}_{eff}. 
+    R_T = w^T_s s^T_{schema} +w^T_{abs} s^{T}_{module} + w^T_{c} \Delta s^{T}_{module} + w^T_{mabs} s^T_{mech} + w^T_{m} \Delta s^{T}_{mech} - w^T_e p^{T}_{eff}. 
 \end{equation}
 
 While all terms included in local scoring appear in the terminal reward, they are modified to capture global behavior. Additionally, two new rewards are included to capture absolute recovery. Absolute terms appear in the terminal score but not the local score. Because local scoring is evaluated on examples that share the same starting state $S_t$, absolute levels cancel, and only relative metrics matter. Conversely, the terminal reward is evaluating complete trajectories, which may vary in starting difficulty and length, so absolute metrics capture global problem-solving ability.
 
-We define the absolute complex membership score as the composite Jaccard, precision, and recall evaluated on the final predicted group $G_T$ against the hidden target $C$:
-\begin{equation}\label{eqn:terminal-complex-abs}
-    s^{T}_{complex} = \alpha J(G_T, C) + \beta P(G_T, C) + \gamma R(G_T, C),
+We define the absolute module membership score as the composite Jaccard, precision, and recall evaluated on the final predicted group $G_T$ against the hidden target $C$:
+\begin{equation}\label{eqn:terminal-module-abs}
+    s^{T}_{module} = \alpha J(G_T, C) + \beta P(G_T, C) + \gamma R(G_T, C),
 \end{equation}
-using the same weighting coefficients $\alpha, \beta, \gamma$ defined in Equation~\ref{eqn:complex-score}. The cumulative complex delta is the difference between the final and initial composite scores:
-\begin{equation}\label{eqn:terminal-complex-delta}
-    \Delta s^{T}_{complex} = s^{T}_{complex} - s^{0}_{complex},
+using the same weighting coefficients $\alpha, \beta, \gamma$ defined in Equation~\ref{eqn:module-score}. The cumulative module delta is the difference between the final and initial composite scores:
+\begin{equation}\label{eqn:terminal-module-delta}
+    \Delta s^{T}_{module} = s^{T}_{module} - s^{0}_{module},
 \end{equation}
-where $s^{0}_{complex} = \alpha J(G_0, C) + \beta P(G_0, C) + \gamma R(G_0, C)$ is the composite score at initialization.
+where $s^{0}_{module} = \alpha J(G_0, C) + \beta P(G_0, C) + \gamma R(G_0, C)$ is the composite score at initialization.
 
 The absolute mechanism score is the evidence-grounded mechanism quality $m_T$ of the final state:
 \begin{equation}\label{eqn:terminal-mech-abs}
@@ -469,7 +489,7 @@ At each decision point $t$, we create DPO preference tuples of the form $(x_t, c
 
 Before constructing pairs, we normalize scores to ensure that the selection margin has a consistent meaning across task types and trajectory lengths. We apply min-max normalization within each candidate pool $\mathcal{C}_t$, rescaling the composite local scores to $[0, 1]$. We denote the normalized score of candidate $c_{t,i,j}$ as $\bar{s}^{\,\text{local}}_{t,i,j}$.
 
-To create paired examples, we set the preferred candidate $c_t^+$ to the branch selected as the trajecotry continuation, $c_{t,i^\star, j^\star}$ (Section~\ref{sec:branch-ranking}), rather than to a strict $\arg\max$ of the normalized score. Because selection resolves near-ties with task-specific heuristics within a tolerance $\epsilon$, the preferred branch is the one judged best for the task, not merely the highest-scoring candidate. We then define a selection margin $\tau$ and drop all candidates for which
+To create paired examples, we set the preferred candidate $c_t^+$ to the branch selected as the trajectory continuation, $c_{t,i^\star, j^\star}$ (Section~\ref{sec:branch-ranking}), rather than to a strict $\arg\max$ of the normalized score. Because selection resolves near-ties with task-specific heuristics within a tolerance $\epsilon$, the preferred branch is the one judged best for the task, not merely the highest-scoring candidate. We then define a selection margin $\tau$ and drop all candidates for which
 
 \[
     \bar{s}^{\,\text{local}}_{t,i^\star,j^\star} - \bar{s}^{\,\text{local}}_{t,i,j} < \tau,
@@ -494,7 +514,7 @@ We first train our policy model with warm-start SFT using the closed-book datase
 We continue the supervised fine-tuning stage by adding open-book tool calling examples and evidence-to-finding examples to our data mixture. We initialize our policy from the warm-start SFT checkpoint with the lowest loss, and we utilize the same pipeline for model training.
 
 \subsubsection{DPO Training}
-After training our model via SFT, we will utilize its learned domain knowledge and tool calling capabilities to perform DPO training. We will utilize examples generated with the trajectory construction methods specified in~\ref{sec:shared-prefix} to create paired preference data. Trajectories will be scored using the functions defined in Section~\ref{sec:pref-construction}; the highest-scoring trajectory will be used as the preferred candidate, while either the lowest-scoring or median-scoring trajectories will be utilized as the dispreferred candidate. Model weights will be optimized using the DPO objective function~\cite{dpo}:
+After training our model via SFT, we will utilize its learned domain knowledge and tool calling capabilities to perform DPO training. We will utilize examples generated with the trajectory construction methods specified in~\ref{sec:shared-prefix} to create paired preference data. Branch continuations will be scored using the functions defined in Section~\ref{sec:pref-construction}. At each decision point, the branch selected as the trajectory continuation serves as the preferred candidate $c_t^+$, while dispreferred candidates $c_t^-$ are drawn from the eligible dispreferred pool across the \texttt{easy}, \texttt{medium}, and \texttt{hard} difficulty bins. Model weights will be optimized using the DPO objective function~\cite{dpo}:
 
 \[
 \mathcal{L}_{\text{DPO}}(\pi_\theta; \pi_{\text{ref}}) = -\mathbb{E}_{(x, y_w, y_l) \sim \mathcal{D}} \left[ \log \sigma \left( \beta \log \frac{\pi_\theta(y_w | x)}{\pi_{\text{ref}}(y_w | x)} - \beta \log \frac{\pi_\theta(y_l | x)}{\pi_{\text{ref}}(y_l | x)} \right) \right].
@@ -526,13 +546,13 @@ During the SFT stage, we scale difficulty by moving from closed-book biological 
 
 After training a joint closed- and open-book SFT checkpoint, we scale difficulty for DPO pairs by training on increasingly difficult examples, based on difficulty bins defined in Section~\ref{sec:pref-construction}. We begin DPO training by limiting preference pairs to $d = \texttt{easy}$ examples, then adding $\texttt{medium}$ and $\texttt{hard}$ examples as training saturates for each difficulty. After DPO training converges on $\texttt{hard}$ preference pairs, we transition to online RL to promote exploration beyond the behaviors captured in logged trajectory outputs.
 
-We scale long-horizon reinforcement learning difficulty with several strategies. First, we modulate the trajectory length $T_{\max}$, starting with shorter exploration budgets and gradually increasing exploration length for problems that require multi-hop exploration. Additionally, we modulate complex size and difficulty, beginning training on small complexes and shifting to larger ones as rewards saturate. Finally, we scale the noise-to-signal ratio $n_g$, beginning with fewer added and dropped genes and progressively adding noise to examples to make recovery more difficult.
+We scale long-horizon reinforcement learning difficulty with several strategies. First, we modulate the trajectory length $T_{\max}$, starting with shorter exploration budgets and gradually increasing exploration length for problems that require multi-hop exploration. Additionally, we modulate module size, beginning training on small modules and shifting to larger ones as rewards saturate. Finally, we scale the per-task difficulty level, which jointly controls the number of dropped and added genes and the dendrogram-distance band from which noise and \texttt{none} genes are drawn (Section~\ref{sec:mentor-corpus}): higher difficulties remove or add more genes and draw distractors from nearer, more easily confused regions of the dendrogram, making recovery and refinement harder.
 
 \subsection{Evaluation and Benchmarks}\label{sec:eval}
-\subsubsection{CORUM Holdout Evaluation}
-We will use several metrics to evaluate the effectiveness of our model. Each metric will be calculated by parsing the model's terminal structured state $S_T$, allowing for scalable evaluation of our checkpoints. All evaluations will be conducted on a held out group of CORUM complex examples.
+\subsubsection{MENTOR Module Holdout Evaluation}
+We will use several metrics to evaluate the effectiveness of our model. Each metric will be calculated by parsing the model's terminal structured state $S_T$, allowing for scalable evaluation of our checkpoints. All evaluations will be conducted on a held out set of \textsc{Mentor}-derived modules from the brain multiplex.
 
-We will report four metrics for evaluation: Jaccard index $J$, precision $P$, recall $R$, and $F_1$ score on predicted CORUM complexes $C^{pred}$ vs. ground truth complexes $C$. Jaccard index is defined as 
+We will report four metrics for evaluation: Jaccard index $J$, precision $P$, recall $R$, and $F_1$ score on the predicted module $C^{pred}$ vs. the hidden module target $C$. Jaccard index is defined as 
 \[
     J(C^{pred}, C) = \frac{\mid C^{pred} \cap C \mid}{\mid C^{pred} \cup C \mid},
 \]
@@ -548,16 +568,16 @@ measuring the proportion of true positive predictions to the sum of true positiv
 \[
     F1 = \frac{2}{\frac{1}{P} + \frac{1}{R}},
 \]
-providing a balanced view of precision and recall to measure general performance. In addition to these complex recovery metrics, we will measure mechanistic grounding quality, defined in Equation~\ref{eqn:terminal-mech-abs}, to assess whether mechanistic claims are supported by retrieved evidence.  
+providing a balanced view of precision and recall to measure general performance. In addition to these module recovery metrics, we will measure mechanistic grounding quality, defined in Equation~\ref{eqn:terminal-mech-abs}, to assess whether mechanistic claims are supported by retrieved evidence.  
 
 We will report the weighted composite reward $R_T$, defined in Section~\ref{sec:terminal-reward}, to directly compare training reward magnitude on validation and holdout splits. If the task type is \texttt{none}, meaning $C = \varnothing$, we will parse the $S_T$ for the predicted relationship $rel_T$. Along with computing global accuracy, we will distinguish between both error directions, analyzing when the model claims no mechanism exists for truly related gene sets and when the model fabricates a mechanism for truly unrelated entities.
 
 Furthermore, we will report efficiency metrics, such as mean trajectory length, budget utilization, and invalid tool call rate. This allows for comparison between holdout efficiency and validation efficiency metrics computed in Equation~\ref{eqn:terminal-eff}.
 
-In addition to general evaluation, we will stratify our evaluation across several axes: complex size, noise, and task type. We will divide complex size and noise into three discrete bins each for comparative evaluation. Reporting stratified metrics allows us to analyze how \textbf{\textsc{Mentor-RL}} performs as task difficulty increases and task type changes.
+In addition to general evaluation, we will stratify our evaluation across several axes: module size, noise, and task type. We will divide module size and noise into three discrete bins each for comparative evaluation. Reporting stratified metrics allows us to analyze how \textbf{\textsc{Mentor-RL}} performs as task difficulty increases and task type changes.
 
 \subsubsection{Novel-Domain Evaluation}
-In addition to empirical evaluation using CORUM complexes as ground truth, we will utilize \textsc{Mentor} to conduct evaluations on novel experimental data. Current versions of the \textsc{Mentor} pipeline significance measures for gene modules yield a ground truth for complexes outside the mammalian protein realm. We will use previously derived experimental data, such as brain multiplex data, as our ground truth. Because these examples are derived from \textsc{Mentor} results on real experimental data, this process will allow us to assess the performance of \textbf{\textsc{Mentor-RL}} on examples outside the curated CORUM universe using the same evaluation techniques described in Section~\ref{sec:eval}. As such, we will gain a better understanding of the strengths and limitations of \textbf{\textsc{Mentor-RL}} on out-of-distribution, real-world data, while still having expert- and algorithm-verified ground truth examples to compare to.
+Because the holdout split above is drawn from the same brain multiplex used for training, it measures in-distribution generalization. To assess out-of-distribution performance, we additionally evaluate on \textsc{Mentor}-derived modules from independently published multiplex studies the model was not trained on, such as networks built for opioid use disorder and cardiac studies. These modules are produced by the same \textsc{Mentor} dendrogram procedure (Section~\ref{sec:mentor-corpus}) over different tissue- and disease-specific multiplexes, so they share the module-recovery scoring methodology while presenting genuinely novel network context. We report the same metrics defined in Section~\ref{sec:eval} and expect a performance gap relative to the brain-multiplex holdout, reflecting distribution shift. Because these modules derive from real experimental networks with expert- and algorithm-verified structure, they let us characterize the strengths and limitations of \textsc{Mentor-RL} on real-world, out-of-distribution data.
 
 \subsubsection{Blind Comparative Evaluation}\label{sec:blind-eval}
 In conjunction with empirical validation, which measures model accuracy, we will conduct blind comparative evaluations to measure expert domain scientists' model preferences. First, we will perform an inter-model preference test, supplying interpretation outputs from \textbf{\textsc{Mentor-RL}}, GPT-5~\cite{gpt5}, gpt-oss-120b~\cite{gpt-oss}, LLaMA 4~\cite{llama4}, Kimi K2~\cite{kimik2}, and Nemotron 3 Super~\cite{nemotron3}. We will provide between 5 and 15 domain experts with paired samples containing \textbf{\textsc{Mentor-RL}} outputs and outputs from another randomly selected model. We will then ask scientists to indicate their preferred interpretation, and with this information, we will calculate the proportion of \textbf{\textsc{Mentor-RL}} outputs that are preferred compared to other models. To support interpretation of these proportions, we will overlap a subset of evaluation pairs across raters and report inter-expert rating reliability.
@@ -574,82 +594,44 @@ Along with testing various training stages, we will ablate architectural and rew
 \section{Expected Results and Deliverables}
 
 \subsection{Expected Empirical Results}
-We expect \textbf{\textsc{Mentor-RL}} to recover held-out CORUM complexes with a composite $F_1$ competitive with frontier models at substantially lower per-query inference cost while improving monotonically across the training pipeline. Each of the SFT, DPO, and GRPO checkpoints should outperform the preceding one on module recovery and mechanistic grounding. Under the stratified evaluation defined in Section~\ref{sec:eval}, we expect the largest gains on \texttt{recovery} and \texttt{refinement} tasks, where deterministic graph operators provide dense supervisory signals, and smaller but nontrivial gains on \texttt{explanation} and \texttt{none} tasks, where reward is driven by mechanistic grounding and abstention rather than set-level recovery. On the novel-domain evaluation against \textsc{Mentor}-derived modules, we expect a performance gap relative to CORUM holdout, reflecting distributional shift, but with the gap narrowing as curriculum difficulty and noise levels increase during training.
+We expect \textsc{Mentor-RL} to recover held-out \textsc{Mentor}-derived modules with a composite $F_1$ competitive with frontier models at substantially lower per-query inference cost while improving monotonically across the training pipeline. Each of the SFT, DPO, and GRPO checkpoints should outperform the preceding one on module recovery and mechanistic grounding. Under the stratified evaluation defined in Section~\ref{sec:eval}, we expect the largest gains on \texttt{recovery} and \texttt{refinement} tasks, where deterministic graph operators provide dense supervisory signals, and smaller but nontrivial gains on \texttt{explanation} and \texttt{none} tasks, where reward is driven by mechanistic grounding and abstention rather than set-level recovery. On the novel-domain evaluation against experimentally-derived \textsc{Mentor} modules, we expect a performance gap relative to brain multiplex holdout, reflecting distributional shift, but with the gap narrowing as curriculum difficulty and noise levels increase during training.
 
 \subsection{Expected Behavioral Results}
-Beyond empirical accuracy, we expect three behavioral outcomes. First, the act-verify loop should reduce schema-invalid tool calls and unsupported mechanistic claims relative to a verifier-ablated baseline, measured by invalid tool call rate and ungrounded-claim rate on the holdout split. Second, the efficiency penalty should produce shorter average trajectories without loss of recovery accuracy relative to a penalty-ablated baseline. Third, blind comparative evaluation should show that expert scientists prefer \textbf{\textsc{Mentor-RL}} outputs to base-policy outputs at a significantly higher rate, and preferences relative to frontier models should improve across successive training stages.
+Beyond empirical accuracy, we expect three behavioral outcomes. First, the act-verify loop should reduce schema-invalid tool calls and unsupported mechanistic claims relative to a verifier-ablated baseline, measured by invalid tool call rate and ungrounded-claim rate on the holdout split. Second, the efficiency penalty should produce shorter average trajectories without loss of recovery accuracy relative to a penalty-ablated baseline. Third, blind comparative evaluation should show that expert scientists prefer \textsc{Mentor-RL} outputs to base-policy outputs at a significantly higher rate, and preferences relative to frontier models should improve across successive training stages.
 
 \subsection{Deliverables}
 We will release, under licenses compatible with the underlying data sources, the following artifacts:
 \begin{enumerate}
     \item the \textsc{Mentor}-grounded training environment, including the \texttt{ctypes} multiplex runtime, tool vocabulary, and deterministic scoring functions,
-    \item train, validation, and test split indices at the complex level, together with the code required to reconstruct the raw training corpus from CORUM and cached API responses,
+    \item train, validation, and test split indices at the module level, together with the code required to reconstruct the raw training corpus and cached API responses,
     \item trained \textsc{Mentor-RL} checkpoints for each stage of the pipeline (warm-start SFT, joint closed- and open-book SFT, DPO, and GRPO),
-    \item the evaluation harness, including CORUM holdout benchmarks, novel-domain \textsc{Mentor}-derived benchmarks, and blind comparative evaluation protocols, and
+    \item the evaluation harness, including \textsc{Mentor} module holdout benchmarks, out-of-distribution published multiplex benchmarks, and blind comparative evaluation protocols, and
     \item training and generation code, curriculum configurations, and logged trajectories to support reproducible re-training and ablation.
 \end{enumerate}
 
 \subsection{Broader Impact}
-By releasing a deterministically-scored, open-source mechanistic exploration agent together with its training environment, we aim to lower the cost of biological interpretation research and establish a reproducible benchmark that does not require proprietary model access. The CORUM-grounded scoring framework is domain-specific, but the underlying pattern, deterministic structured-state rewards over a tool-using policy, is transferable to other scientific settings with curated ground truth.
+By releasing a deterministically-scored, open-source mechanistic exploration agent together with its training environment, we aim to lower the cost of biological interpretation research and establish a reproducible benchmark that does not require proprietary model access. The module-grounded scoring framework is domain-specific, but the underlying pattern, deterministic structured-state rewards over a tool-using policy, is transferable to other scientific settings with curated ground truth.
 
 \section{Discussion and Conclusion}
 
-\subsection{CORUM Licensing and Data Redistribution}
-Because the CORUM dataset is restricted to academic, non-commercial use, and redistribution of the raw data is not permitted under standard terms, our model releases will not include the raw dataset. To preserve reproducibility, we will release train, validation, and test split indices at the complex level together with the code needed to reconstruct the raw training corpus directly from CORUM. Cached API responses from databases such as MyGene.info and Europe PMC will be distributed under their respective licenses.
-
 \subsection{Reproducibility Without Proprietary Judges}
-The training pipeline for \textbf{\textsc{Mentor-RL}} foregoes the use of proprietary judge models to ensure reproducibility and compliance with terms of use. Rewards are computed deterministically over structured state transitions and CORUM-derived ground truth rather than by semantic evaluation from a frontier model. Trajectories are generated either by sampling the policy under training or by deterministic templating, not by proxy labeling through a closed API. One exception is query paraphrasing during dataset construction, for which we will use an open-source model with a pinned version so that the paraphrasing step can be reproduced without API access. Despite avoiding proprietary models during training, we will still compare \textbf{\textsc{Mentor-RL}} to them through blind comparative evaluation, detailed in Section~\ref{sec:blind-eval}.
+The training pipeline for \textsc{Mentor-RL} foregoes the use of proprietary judge models to ensure reproducibility and compliance with terms of use. Rewards are computed deterministically over structured state transitions and \textsc{Mentor}-derived ground truth rather than by semantic evaluation from a frontier model. Trajectories are generated either by sampling the policy under training or by deterministic templating, not by proxy labeling through a closed API. One exception is query paraphrasing during dataset construction, for which we will use an open-source model with a pinned version so that the paraphrasing step can be reproduced without API access. Despite avoiding proprietary models during training, we will still compare \textsc{Mentor-RL} to them through blind comparative evaluation, detailed in Section~\ref{sec:blind-eval}.
 
 \subsection{Limitations}\label{sec:limitations}
 Several limitations constrain the scope of the claims we can make with this work.
 
-\textit{Ground-truth coverage.} CORUM covers mammalian protein complexes and does not capture the full space of mechanistic biological relationships such as regulatory circuits, signaling cascades, or cross-compartment interactions. A model trained to recover CORUM complexes may underperform on relationships that are mechanistic but non-complex in nature. While our novel-domain evaluation using \textsc{Mentor}-derived modules partially addresses this, the gap is not eliminated.
-
-\textit{Reward-hacking risk.} The composite complex-membership score rewards moves toward the hidden target $C$. Since $C$ is never observed directly, the agent cannot short-circuit it, but shortcut policies are still possible. For example, a policy that always returns the top-$k$ random-walk-with-restart output from the seed set will recover a substantial fraction of CORUM complexes without genuine multi-step reasoning. The efficiency penalty does not counteract this behavior. We will monitor tool-use entropy and trajectory diversity during training and, if shortcut behavior emerges, introduce adversarially constructed complexes or a diversity bonus as mitigations.
+\textit{Reward-hacking risk.} The composite module-membership score rewards moves toward the hidden target $C$. Since $C$ is never observed directly, the agent cannot short-circuit it, but shortcut policies are still possible. For example, a policy that always returns the top-$k$ random-walk-with-restart output from the seed set will recover a substantial fraction of \textsc{Mentor} modules without genuine multi-step reasoning. The efficiency penalty does not counteract this behavior. We will monitor tool-use entropy and trajectory diversity during training and, if shortcut behavior emerges, introduce adversarially constructed modules or a diversity bonus as mitigations.
 
 \textit{Shared-weight verifier.} The actor and verifier are two prompting modes of the same policy, so DPO and RL updates on one mode also update the other. This introduces a risk of verifier collapse, in which the verifier learns to endorse the actor's proposals regardless of quality. We will monitor the verifier disagreement rate and, if collapse is observed, consider separate LoRA adapters per mode or a consistency regularizer between modes.
 
-\textit{Task difficulty imbalance.} The four task types are sampled uniformly during corpus construction, but they are not of equal difficulty; \texttt{explanation} tasks require no graph modification, while \texttt{refinement} tasks require the verifier to remove members without a tool that directly marks membership. We treat the per-task sampling weights as a hyperparameter and expect to tune them during pilot training.
+\textit{Task difficulty imbalance.} The four task types are constructed uniformly during corpus construction, but they are not of equal difficulty; \texttt{explanation} tasks require no graph modification, while \texttt{refinement} tasks require the verifier to remove members without a tool that directly marks membership. We treat the per-task sampling weights as a hyperparameter and expect to tune them during pilot training.
 
-\textit{Split-level leakage.} CORUM complexes share subunits across entries; therefore, a complex-level split does not by itself prevent leakage through shared subunits. We will report overlap statistics between train and held-out splits and, if overlap is material, adopt a subunit-aware split strategy.
+\textit{Split-level leakage.} Dendrogram modules share genes across different cuts of the tree; therefore, a module-level split does not by itself prevent leakage through genes shared across overlapping modules. We will report overlap statistics between train and held-out splits and, if overlap is material, adopt a gene-overlap-aware split strategy.
 
 \textit{Expert evaluation scope.} The blind comparative evaluation relies on 5 to 15 domain experts making pairwise preference judgments. This sample size supports descriptive comparison but not tight confidence intervals on preference rates, and expert rating reliability will be reported alongside preference proportions.
 
 \subsection{Conclusion}
-We have presented \textbf{\textsc{Mentor-RL}}, a proposed open-source reasoning agent for biological mechanistic interpretation, trained through a staged pipeline of supervised fine-tuning, direct preference optimization over shared-prefix trajectory branches, and policy gradient optimization for long-horizon exploration. The training environment grounds rewards in deterministic graph operators and CORUM-derived targets, removing proprietary judges from the loop and exposing every optimization signal as a reproducible, structured quantity. We view \textbf{\textsc{Mentor-RL}} as one instance of a broader methodological pattern: domain-specialized scientific agents whose behavior is shaped by deterministic structured-state rewards over curated ground truth, rather than by semantic evaluation from frontier models. If successful, this pattern offers a route toward scientific AI systems that are cheap to deploy, auditable in their reasoning, and reproducible across research groups without centralized model access.
-
-\appendix
-\renewcommand{\thechapter}{\alph{chapter}}
-\renewcommand{\thesection}{\Roman{section}}
-\renewcommand{\thesubsection}{\fnsymbol{subsection}}
-\section{Agent Loop Algorithm}\label{app:agent-loop-alg}
-% MENTOR-RL Agent Loop PseudoCode
-\begin{algorithm}[t]
-\caption{\textbf{\textsc{Mentor-RL}} Agent Loop}
-\begin{algorithmic}[1]
-\State Initialize $I_0, S_0$ from query $q$ and user evidence $e^{\text{user}}$
-\State $T \gets 0$
-\For{$t = 0, 1, \dots, T_{\max}-1$}
-    \State $D_t \gets (q, e^{\text{user}}, I_t, S_t)$
-    \State $(r_t, a_t) \sim \pi_\theta^{\mathrm{act}}(\cdot \mid D_t)$
-    \If{$a_t \neq \varnothing$}
-        \State $o_t \gets \varepsilon(a_t)$
-    \Else
-        \State $o_t \gets \varnothing$
-    \EndIf
-    \State $(I_{t+1}, S_{t+1}, z_t) \sim \pi_\theta^{\mathrm{verify}}(\cdot \mid r_t, a_t, o_t, D_t)$
-    \State $T \gets t+1$
-    \If{$z_t = \texttt{stop}$}
-        \State \textbf{break}
-    \EndIf
-\EndFor
-\State \Return final interpretation $I_T$ and structured state $S_T$
-\end{algorithmic}
-\end{algorithm}
-
-\section{CORUM Corpus Creation Algorithm}\label{app:corum-corpus-alg}
-
-\section{Trajectory Generation Algorithm}\label{app:traj-gen-alg}
+We have presented \textbf{\textsc{Mentor-RL}}, a proposed open-source reasoning agent for biological mechanistic interpretation, trained through a staged pipeline of supervised fine-tuning, direct preference optimization over shared-prefix trajectory branches, and policy gradient optimization for long-horizon exploration. The training environment grounds rewards in deterministic graph operators and \textsc{Mentor}-derived module targets, removing proprietary judges from the loop and exposing every optimization signal as a reproducible, structured quantity. We view \textbf{\textsc{Mentor-RL}} as one instance of a broader methodological pattern: domain-specialized scientific agents whose behavior is shaped by deterministic structured-state rewards over curated ground truth, rather than by semantic evaluation from frontier models. If successful, this pattern offers a route toward scientific AI systems that are cheap to deploy, auditable in their reasoning, and reproducible across research groups without centralized model access.
 
 \printbibliography
 \end{document}
