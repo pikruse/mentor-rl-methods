@@ -1,0 +1,29 @@
+# Project-local ChkTeX config for mentor-rl-methods.
+# Auto-loaded by chktex from the working directory (and honored by the
+# VS Code LaTeX Workshop linter, which runs chktex from the project root).
+#
+# We silence purely-stylistic warnings and a couple of false positives that
+# are noise in this math-heavy proposal. Substantive warnings (unbalanced
+# braces, bad math mode, missing ~ before \cite/\ref, etc.) stay ON.
+#
+# To re-enable any warning, delete its -n line. Reference:
+#   1  Command terminated with space      -> algpseudocode \State etc. (style)
+#   3  Enclose previous parenthesis {}     -> math nitpick (style)
+#   9  ')' expected, found ']'             -> false positive from interval $(0,1]$
+#   12 Interword spacing \  should be used -> abbreviation spacing (style)
+#   13 Intersentence spacing \@            -> "vs.", "et al." spacing (style)
+#   17 '(' count doesn't match ')'         -> false positive from interval $(0,1]$
+#   24 Delete space (pageref correctness)  -> space before \label in floats (style)
+#   38 Punctuation in front of quotes      -> "...?''" is correct here (style)
+
+CmdLine
+{
+    -n1
+    -n3
+    -n9
+    -n12
+    -n13
+    -n17
+    -n24
+    -n38
+}
