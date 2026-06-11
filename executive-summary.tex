@@ -1,3 +1,6 @@
+\documentclass[letterpaper,11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage[T1]{fontenc}
 \begin{document}
 \section{Motivation}
 As high-throughput technologies generate increasingly large and complex biological datasets, specifically in the form of multi-omics networks, there is a growing need for scalable methods to aid in the mechanistic interpretation of these data. Traditionally, human experts have taken a deep-but-narrow approach to interpretation, focusing on a small number of genes or pathways in great detail. Conversely, general purpose language models tend to provide a broad-but-shallow perspective, offering high-level summaries without the depth of insight required for mechanistic understanding. Both approaches have their limitations: human interpretation is time-consuming and constrained by cognitive bandwidth, while LLMs often lack deep multi-step reasoning capabilities and are constrained by cost, data quality, and scope. To address this gap, we propose \textsc{Mentor-RL}, a foundation-style model for genome-scale mechanistic reasoning over multiplex networks, trained to provide a base policy that can be adapted to tissue-, organ-, disease-, or cell-type specific contexts. 
