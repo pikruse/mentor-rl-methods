@@ -43,7 +43,7 @@ We make five contributions:
 \begin{enumerate}
     \item We formalize mechanistic graph exploration as a sequential decision process with a single policy operating in two modes: an actor that proposes reasoning and tool calls, and a verifier that updates a structured hypothesis and emits a continuation decision.
 
-    \item We construct a dual-source module training corpus, comprising \textsc{Mentor}-derived dendrogram modules and random-walk-with-restart lines-of-evidence (RWR-LOE) seed expansion modules, supporting four task cases: partial group completion, mechanism explanation, noisy group refinement, and recognition of no shared mechanism.
+    \item We construct a dual-source module training corpus, comprising \textsc{Mentor}-derived dendrogram modules and RWR++ elbow-filtered random-walk-with-restart lines-of-evidence (RWR-LOE) modules, supporting four task cases: partial group completion, mechanism explanation, noisy group refinement, and recognition of no shared mechanism.
 
     \item We design a deterministic, schema-grounded reward system over structured state transitions, enabling reproducible scoring without proprietary judges at the step level during preference optimization and the trajectory level for policy gradient optimization.
     
@@ -58,16 +58,16 @@ We make five contributions:
 Systems biology examines biological function by studying interactions between molecular entities such as genes, proteins, and metabolites, rather than analyzing their individual properties~\cite{hartwell1999molecular, barabasi2004network}. A central goal is identifying \textit{modules}, or groups of functionally related entities, and characterizing the mechanisms that underlie their behavior. Because network interactions can span multiple scales and regulatory layers, modern systems biology relies on multiplex and multilayer network representations to capture context-specific relationships~\cite{barabasi2011network, ideker2012differential}. Module-level analysis has become a foundational tool for identifying disease mechanisms, prioritizing drug targets, and interpreting polygenic phenotypes~\cite{menche2015uncovering}, motivating the need for curated, mechanistic ground truth data against which computational methods can be developed and evaluated.
 
 \subsubsection{Curated Interaction Maps}
-Large-scale systems biology depends on curated molecular interaction databases that capture experimentally supported relationships at varying levels of resolution. Creating high-coverage, expert-annotated networks is crucial for enabling large-scale systems biology studies and encouraging mechanistic discovery.  BioGRID~\cite{oughtred2021biogrid} catalogs physical and genetic interactions across humans and model organisms from both low- and high-throughput studies. Reactome~\cite{reactome, gillespie2022reactome} provides manually curated, reaction-level pathway models for human biology. While both resources supply rich interaction evidence, neither organizes proteins into functional groups with verified co-membership. The CORUM database~\cite{giurgiu2019corum, tsitsiridis2023corum} fills this gap by curating experimentally verified mammalian protein complexes exclusively from low-throughput experiments. By providing verified group membership, curated interaction maps serve as a high confidence reference for mechanistic relationships. These resources, however, cover only a small, well-studied fraction of the interactome and are costly to extend, motivating computationally derived module structures that scales across the entire genome. 
+Large-scale systems biology depends on curated molecular interaction databases that capture experimentally supported relationships at varying levels of resolution. Creating high-coverage, expert-annotated networks is crucial for enabling large-scale systems biology studies and encouraging mechanistic discovery.  BioGRID~\cite{oughtred2021biogrid} catalogs physical and genetic interactions across humans and model organisms from both low- and high-throughput studies. Reactome~\cite{reactome, gillespie2022reactome} provides manually curated, reaction-level pathway models for human biology. While both resources supply rich interaction evidence, neither organizes proteins into functional groups with verified co-membership. The CORUM database~\cite{giurgiu2019corum, tsitsiridis2023corum} fills this gap by curating experimentally verified mammalian protein complexes exclusively from low-throughput experiments. By providing verified group membership, curated interaction maps serve as a high confidence reference for mechanistic relationships. These resources, however, cover only a small, well-studied fraction of the interactome and are costly to extend, motivating computationally derived module structures that scale across the entire genome.
 
 \subsubsection{Genome-Wide Module Discovery with MENTOR}
 A complementary approach to curated databases is deriving mechanistic ground truth directly from network structure. \textsc{MENTOR} (Multiplex Embedding of Networks for Team-Based Omics Research)~\cite{mentor} computes random-walk-restart (RWR) embeddings for every gene across the layers of a multiplex, converts the embeddings into pairwise distances, and applies hierarchical clustering to produce a genome-wide dendrogram in which leaves are genes and internal nodes represent successively coarser functional groups. Selecting subtrees from this dendrogram yields a module whose granularity is controlled by the merge height at which the cut is taken, producing a nested family of modules that span the entire gene universe of the underlying network. Unlike curated databases, \textsc{Mentor} provides module structure at genome scale and for arbitrary multiplexes, including tissue- and context-specific networks, trading literature-based verification for broad coverage and mechanistic coherence.
 
 \subsubsection{Gene-Centric Module Discovery with RWR-LOE}
-While \textsc{Mentor} produces modules through top-down hierarchical clustering of the full gene universe, a complementary bottom-up approach derives modules for each individual gene. Applying RWR-LOE~\cite{kainer2025rwrtoolkit} to a single seed gene $g$ yields a ranked list of all other genes, ordered by propagation proximity to the seed. RWR-LOE walks the entire multiplex, treating each layer as an independent line of evidence, so that final rankings reflect the combined network structure rather than a single interaction type. Retaining the seed and the top-$k$ ranked genes yields a gene-centric module $C^{\text{loe}}_g = \{g\} \cup \mathrm{top\text{-}}k(g)$, producing one module per gene in the network. RWR-LOE modules provide a complementary, bottom-up source of mechanistic ground truth compared to hierarchical \textsc{Mentor} modules.
+While \textsc{Mentor} produces modules through top-down hierarchical clustering of the full gene universe, a complementary bottom-up approach derives modules for each individual gene. Applying RWR-LOE~\cite{kainer2025rwrtoolkit} to a single seed gene $g$ yields a ranked list of all other genes, ordered by propagation proximity to the seed. RWR-LOE walks the entire multiplex, treating each layer as an independent line of evidence, so that final rankings reflect the combined network structure rather than a single interaction type. Rather than imposing a fixed neighborhood size, RWR++ elbow filtering selects the cutoff at the bend in the score-versus-rank curve for each seed. Retaining the seed and all genes before this adaptive cutoff yields a gene-centric module $C^{\text{loe}}_g$, producing one module per gene in the network. RWR-LOE modules provide a complementary, bottom-up source of mechanistic ground truth compared to hierarchical \textsc{Mentor} modules.
 
 \subsubsection{Network Construction and Exploration on Multiplexes}
-Despite their value as annotated, benchmarkable datasets, curated interaction maps do not cover the full interactome; as a consequence, developing new network construction and exploration methods is crucial. Iterative random forest (iRF) expands on traditional random forests by weighting the feature sampling distribution according to variable importance scores across successive fits and using a stability selection procedure to capture higher-order interactions~\cite{basu2018iterative}. iRF has been used to construct predictive expression networks (PENs), which model gene-gene regulatory relationships inferred from co-expression, uncovering true connections from massive datasets that may be missed in hand-curated databases~\cite{cliff2019high, walker2022evaluating}. Because biological systems comprise many complementary interaction modalities, integrating them without losing information motivated the development of the multiplex network formalism~\cite{mucha2010community, de2013mathematical}, which represents the same node set across multiple edge layers of differing types. These structures remain compatible with classical exploration techniques; multiplex networks still support network propagation, such as random walk with restart (RWR)~\cite{kohler2008walking, cowen2017network} and other community detection methods built on the modularity objective~\cite{newman2004finding}, most prominently the Louvain method~\cite{blondel2008fast} to discover functional modules. More recently, the power of graph deep learning has also been realized, supplanting hand-engineered propagation techniques with learned ones in some data-rich regimes. Graph convolutional networks~\cite{kipf2016semi} aggregate neighbor features through message passing, while graph attention networks learn neighbor weights through self attention~\cite{velivckovic2017graph}. These techniques enable end-to-end supervised learning on tasks such as node classification, link prediction, and disease gene prioritization.
+Because biological systems comprise many complementary interaction modalities, integrating them without losing information motivated the development of the multiplex network formalism~\cite{mucha2010community, de2013mathematical}, which represents the same node set across multiple edge layers of differing types. Multiplex networks support propagation methods such as random walk with restart (RWR)~\cite{kohler2008walking, cowen2017network}, community detection methods, and learned graph models for tasks such as node classification, link prediction, and disease gene prioritization. In this proposal, these methods primarily motivate the graph operators available to the agent, while \textsc{Mentor} and RWR-LOE define the module targets used for training and evaluation.
 
 \subsection{Tool-Using Language Models for Scientific Reasoning}
 \subsubsection{Transformer Reasoning with Tool Use}
@@ -121,6 +121,31 @@ I_{t+1}, S_{t+1}, z_t \sim \pi_{\theta}^{\mathrm{verify}}(\cdot \mid r_t, a_t, o
 \]
 where $r_t$ is the agent's textual reasoning or subgoal, $a_t$ is the optional tool action, and $o_t$ is the observation returned by the deterministic runtime $\varepsilon$, with $\varepsilon(\varnothing)=\varnothing$ by convention. The policies $\pi_{\theta}^{\mathrm{act}}$ and $\pi_{\theta}^{\mathrm{verify}}$ denote two prompting modes of the same underlying model, sharing weights so that biological vocabulary and tool-use competence learned in one mode transfers to the other. We treat the risk that the verifier collapses as a monitoring concern during training, discussed in Section~\ref{sec:limitations}. At each decision point, the pair $(I_t, S_t)$ represents the current mechanistic hypothesis, with $I_t$ serving as a human-readable view and $S_t$ as a machine-readable view of the same underlying state. The full agent loop algorithm is detailed in Algorithm~\ref{alg:agent-loop}.
 
+\begin{algorithm}[t]
+\caption{The \textsc{Mentor-RL} agent loop}
+\label{alg:agent-loop}
+\begin{algorithmic}[1]
+\Require query $q$, user evidence $e^{\text{user}}$, maximum decision budget $T_{\max}$, deterministic runtime $\varepsilon$
+\State Initialize working interpretation $I_0$ and structured state $S_0$ from $(q, e^{\text{user}})$
+\State $T \gets 0$
+\For{$t = 0, 1, \dots, T_{\max}-1$}
+    \State $D_t \gets (q, e^{\text{user}}, I_t, S_t)$
+    \State $(r_t, a_t) \sim \pi_{\theta}^{\mathrm{act}}(\cdot \mid D_t)$
+    \If{$a_t \neq \varnothing$}
+        \State $o_t \gets \varepsilon(a_t)$
+    \Else
+        \State $o_t \gets \varnothing$
+    \EndIf
+    \State $(I_{t+1}, S_{t+1}, z_t) \sim \pi_{\theta}^{\mathrm{verify}}(\cdot \mid r_t, a_t, o_t, D_t)$
+    \State $T \gets t+1$
+    \If{$z_t = \texttt{stop}$}
+        \State \textbf{break}
+    \EndIf
+\EndFor
+\State \Return final interpretation $I_T$ and structured state $S_T$
+\end{algorithmic}
+\end{algorithm}
+
 \begin{figure}[htb!]
     \centering
     \includegraphics[width=\linewidth]{img/agent_loop.pdf}
@@ -169,7 +194,7 @@ We support four output cases during training to reflect the variability of exper
 Partial group completion occurs when the user provides a subset of related genes; the model expands this subset into a larger mechanistically related group and explains it. Mechanism explanation occurs when the user provides a complete module; the model explains the mechanism without unnecessary expansion. Group refinement occurs when the user provides a known module with several unrelated noise genes; the agent refines the group so that it contains only mechanistically related genes. Finally, in the no shared mechanism case, the user provides genes that do not support one coherent mechanism, and the model either splits them into multiple groups or returns insufficient support.
 
 \subsubsection{Targets for Training and Evaluation}
-We define two complementary target types for training and evaluation. \textbf{Module membership targets} are the hidden gene sets drawn from either \textsc{Mentor}-derived dendrogram modules or RWR-LOE seed-expansion modules (Section~\ref{sec:training-corpus}). These targets are only used for scoring: the agent never observes hidden module members and must recover them through exploration. These modules supply the supervised signal for set-level recovery, refinement, and abstention. 
+We define two complementary target types for training and evaluation. \textbf{Module membership targets} are the hidden gene sets drawn from either \textsc{Mentor}-derived dendrogram modules or elbow-filtered RWR-LOE modules (Sections~\ref{sec:mentor-corpus} and~\ref{sec:loe-corpus}). These targets are only used for scoring: the agent never observes hidden module members and must recover them through exploration. These modules supply the supervised signal for set-level recovery, refinement, and abstention.
 
 Because dendrogram modules are derived computationally from multiplex structure, they offer genome-wide coverage, but often without per-entry experimental annotations. \textbf{Mechanistic evidence targets} therefore score the quality of a final explanation against the evidence retrieved during exploration, such as enrichment, annotation, and graph support. This allows interpretations to be rewarded for being grounded in evidence rather than simply matching a pre-defined annotation, which encourages the exploration of novel biology beyond existing databases.
 
@@ -259,22 +284,20 @@ Noise and \texttt{none} genes are drawn from difficulty-modulated \textit{dendro
 \end{algorithm}
 
 \subsubsection{RWR-LOE Module Corpus}\label{sec:loe-corpus}
-In addition to the top-down, hierarchical \textsc{Mentor}-derived module corpus, we create a corpus of RWR-LOE exploration across all genes in the multiplex to provide a bottom-up complement. For each gene $g$ in the same multiplex universe as the \textsc{Mentor} dendrogram, we run \texttt{rwr\_loe}$(g)$ to obtain a propagation score and rank for every other gene in the network. We retain the seed and the top-$k$ ranked genes to form an LOE module $C^{\text{loe}}_g = \{g\} \cup \mathrm{top\text{-}}k(g)$, where $k$ is drawn from a discrete set $\{k_{\text{small}}, k_{\text{medium}}, k_{\text{large}}\}$ matching the three size bins of the \textsc{Mentor}-derived corpus.
+In addition to the top-down, hierarchical \textsc{Mentor}-derived module corpus, we create a corpus of RWR-LOE exploration across all genes in the multiplex to provide a bottom-up complement. For each gene $g$ in the same multiplex universe as the \textsc{Mentor} dendrogram, we run \texttt{rwr\_loe}$(g)$ to obtain a propagation score and rank for every other gene in the network. We then apply the RWR++ elbow filter to the score-versus-rank curve for that seed, yielding an adaptive cutoff rank $r^\star_g$. The LOE module is defined as $C^{\text{loe}}_g = \{g\} \cup \{v : \mathrm{rank}_g(v) \le r^\star_g\}$, producing a single seed-specific module per gene without imposing a fixed module size.
 
-For each module, we materialize the same four task instances the \textsc{Mentor}-derived corpus. For difficulty control, we substitute RWR-LOE rank bands for dendrogram distance bands: noise and \texttt{none} genes are drawn from topologically close, medium, or distant ranks depending on percentile thresholds. We partition RWR-LOE modules into train, validation, and test splits independently of the \textsc{Mentor}-derived modules. The two coropora are complementary: \textsc{Mentor} modules capture top-down, hierarchical functional organization, while RWR-LOE modules reflect bottom-up, seed-centered topology.
+For each module, we materialize the same four task instances as the \textsc{Mentor}-derived corpus. For difficulty control, we substitute RWR-LOE rank bands for dendrogram distance bands: noise and \texttt{none} genes are drawn from ranks just beyond, moderately beyond, or far beyond the seed's elbow cutoff. We partition RWR-LOE modules into train, validation, and test splits independently of the \textsc{Mentor}-derived modules, and module-size bins are assigned after construction from the realized values of $|C^{\text{loe}}_g|$. The two corpora are complementary: \textsc{Mentor} modules capture top-down, hierarchical functional organization, while RWR-LOE modules reflect bottom-up, seed-centered topology.
 \begin{algorithm}[t]
 \caption{Creation of the RWR-LOE module training corpus}
 \label{alg:loe-module-corpus}
 \begin{algorithmic}[1]
-\Require multiplex $M$, gene universe $\mathcal{G}$,
-         size-bin map $\kappa = \{k_{\text{small}}, k_{\text{medium}},
-         k_{\text{large}}\}$, difficulty map $\delta$
+\Require multiplex $M$, gene universe $\mathcal{G}$, elbow-filter parameters $\phi$, difficulty map $\delta$
 \State Partition $\mathcal{G}$ into train/validation/test splits at the gene level
 \For{each gene $g \in \mathcal{G}$}
-    \State Run $\texttt{rwr\_loe}(g, M)$ to obtain ranked list $L_g$
-    \State Select $k \gets \kappa_b$ where $b$ is sampled to match the
-           \textsc{Mentor} size distribution
-    \State $C^{\text{loe}}_g \gets \{g\} \cup \mathrm{top\text{-}}k(L_g)$,
+    \State Run $\texttt{rwr\_loe}(g, M)$ to obtain scores $s_g$ and ranked list $L_g$
+    \State $r^\star_g \gets \textsc{ElbowCutoff}(L_g, s_g, \phi)$
+    \State $E_g \gets \{v \in L_g : \mathrm{rank}_g(v) \le r^\star_g\}$
+    \State $C^{\text{loe}}_g \gets \{g\} \cup E_g$,
            \quad $n \gets |C^{\text{loe}}_g|$
     \State \textbf{// explanation}
     \State emit $(C^{\text{in}} = C^{\text{loe}}_g,\; C = C^{\text{loe}}_g,\;
@@ -290,14 +313,14 @@ For each module, we materialize the same four task instances the \textsc{Mentor}
 
     \State \textbf{// refinement}
     \State $k_{\text{add}} \gets \textsc{NoiseCount}(n, \delta_{\text{ref}})$;
-           \quad $G_{\text{add}} \gets \textsc{RankBandNeg}(L_g, k, k_{\text{add}},
+           \quad $G_{\text{add}} \gets \textsc{RankBandNeg}(L_g, r^\star_g, k_{\text{add}},
            \delta_{\text{ref}})$
     \State emit $(C^{\text{in}} = C^{\text{loe}}_g \cup G_{\text{add}},\;
            C = C^{\text{loe}}_g,\; \texttt{refinement},\;
            rel=\texttt{validated\_group})$
 
     \State \textbf{// none}
-    \State $G_{\text{none}} \gets \textsc{RankBandNeg}(L_g, k, n, \delta_{\text{none}},
+    \State $G_{\text{none}} \gets \textsc{RankBandNeg}(L_g, r^\star_g, n, \delta_{\text{none}},
            \text{conflict\_free})$
     \State emit $(C^{\text{in}} = G_{\text{none}},\; C = \varnothing,\;
            \texttt{none},\; rel=\texttt{insufficient\_support})$
@@ -599,7 +622,7 @@ During the SFT stage, we scale difficulty by moving from closed-book biological 
 
 After training a joint closed- and open-book SFT checkpoint, we scale difficulty for DPO pairs by training on increasingly difficult examples, based on difficulty bins defined in Section~\ref{sec:pref-construction}. We begin DPO training by limiting preference pairs to $d = \texttt{easy}$ examples, then adding $\texttt{medium}$ and $\texttt{hard}$ examples as training saturates for each difficulty. After DPO training converges on $\texttt{hard}$ preference pairs, we transition to online RL to promote exploration beyond the behaviors captured in logged trajectory outputs.
 
-We scale long-horizon reinforcement learning difficulty with several strategies. First, we modulate the trajectory length $T_{\max}$, starting with shorter exploration budgets and gradually increasing exploration length for problems that require multi-hop exploration. Additionally, we modulate module size, beginning training on small modules and shifting to larger ones as rewards saturate. Finally, we scale the per-task difficulty level, which jointly controls the number of dropped and added genes and the dendrogram-distance band from which noise and \texttt{none} genes are drawn (Section~\ref{sec:training-corpus}): higher difficulties remove or add more genes and draw distractors from nearer, more easily confused regions of the dendrogram, making recovery and refinement harder. At each stage, training batches are sampled from both the \textsc{Mentor}-derived and RWR-LOE module pools and are rebalanced by task type and difficulty bin to prevent either corpus from dominating training.
+We scale long-horizon reinforcement learning difficulty with several strategies. First, we modulate the trajectory length $T_{\max}$, starting with shorter exploration budgets and gradually increasing exploration length for problems that require multi-hop exploration. Additionally, we modulate realized module size, beginning training on small modules and shifting to larger ones as rewards saturate. Finally, we scale the per-task difficulty level, which jointly controls the number of dropped and added genes and the source-specific distractor band from which noise and \texttt{none} genes are drawn: dendrogram-distance bands for \textsc{Mentor}-derived modules (Section~\ref{sec:mentor-corpus}) and post-elbow rank bands for RWR-LOE modules (Section~\ref{sec:loe-corpus}). Higher difficulties remove or add more genes and draw distractors from nearer, more easily confused regions of the corresponding module source, making recovery and refinement harder. At each stage, training batches are sampled from both the \textsc{Mentor}-derived and RWR-LOE module pools and are rebalanced by task type and difficulty bin to prevent either corpus from dominating training.
 
 \subsection{Evaluation and Benchmarks}\label{sec:eval}
 \subsubsection{Module Holdout Evaluation}
@@ -627,7 +650,7 @@ We will report the weighted composite reward $R_T$, defined in Section~\ref{sec:
 
 Furthermore, we will report efficiency metrics, such as mean trajectory length, budget utilization, and invalid tool call rate. This allows for comparison between holdout efficiency and validation efficiency metrics computed in Equation~\ref{eqn:terminal-eff}.
 
-In addition to general evaluation, we will stratify our evaluation across several axes: module size, noise, task type, and module source. We will divide module size and noise into three discrete bins each for comparative evaluation. Reporting stratified metrics allows us to analyze how \textsc{Mentor-RL} performs as task difficulty increases and task type changes, and comparing metrics by module source exposes whether the model generalizes across module construction methods or exhibiits biases toward one of the two module types.
+In addition to general evaluation, we will stratify our evaluation across several axes: module size, noise, task type, and module source. We will divide module size and noise into three discrete bins each for comparative evaluation. Reporting stratified metrics allows us to analyze how \textsc{Mentor-RL} performs as task difficulty increases and task type changes, and comparing metrics by module source exposes whether the model generalizes across module construction methods or exhibits biases toward one of the two module types.
 
 \subsubsection{Novel-Domain Evaluation}
 Because the holdout split above is drawn from the same brain multiplex used for training, it measures in-distribution generalization. To assess out-of-distribution performance, we additionally evaluate on \textsc{Mentor}-derived modules from independently published multiplex studies the model was not trained on, such as networks built for opioid use disorder and cardiac studies. These modules are produced by the same \textsc{Mentor} dendrogram procedure (Section~\ref{sec:mentor-corpus}) over different tissue- and disease-specific multiplexes, so they share the module-recovery scoring methodology while presenting genuinely novel network context. We report the same metrics defined in Section~\ref{sec:eval} and expect a performance gap relative to the brain-multiplex holdout, reflecting distribution shift. Because these modules derive from real experimental networks with expert- and algorithm-verified structure, they let us characterize the strengths and limitations of \textsc{Mentor-RL} on real-world, out-of-distribution data.
@@ -673,7 +696,7 @@ The training pipeline for \textsc{Mentor-RL} foregoes the use of proprietary jud
 \subsection{Limitations}\label{sec:limitations}
 Several limitations constrain the scope of the claims we can make with this work.
 
-\textit{Reward-hacking risk.} The composite module-membership score rewards moves toward the hidden target $C$. Since $C$ is never observed directly, the agent cannot short-circuit it, but shortcut policies are still possible. For example, a policy that always returns the top-$k$ random-walk-with-restart output from the seed set will recover a substantial fraction of \textsc{Mentor} modules without genuine multi-step reasoning. The efficiency penalty does not counteract this behavior. We will monitor tool-use entropy and trajectory diversity during training and, if shortcut behavior emerges, introduce adversarially constructed modules or a diversity bonus as mitigations.
+\textit{Reward-hacking risk.} The composite module-membership score rewards moves toward the hidden target $C$. Since $C$ is never observed directly, the agent cannot short-circuit it, but shortcut policies are still possible. For example, a policy that always returns a single-pass random-walk-with-restart expansion from the seed set will recover a substantial fraction of \textsc{Mentor} modules without genuine multi-step reasoning. The efficiency penalty does not counteract this behavior. We will monitor tool-use entropy and trajectory diversity during training and, if shortcut behavior emerges, introduce adversarially constructed modules or a diversity bonus as mitigations.
 
 \textit{Shared-weight verifier.} The actor and verifier are two prompting modes of the same policy, so DPO and RL updates on one mode also update the other. This introduces a risk of verifier collapse, in which the verifier learns to endorse the actor's proposals regardless of quality. We will monitor the verifier disagreement rate and, if collapse is observed, consider separate LoRA adapters per mode or a consistency regularizer between modes.
 
