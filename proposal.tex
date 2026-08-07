@@ -1,0 +1,115 @@
+\documentclass[thesis,letterpaper,12pt]{utthesis}
+\usepackage{graphicx}
+\usepackage{biblatex}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{appendix}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath}
+
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+
+\title{MENTOR-RL Methods}
+\author{Peter Kruse}
+\date{June 2026}
+
+\addbibresource{references.bib}
+
+\begin{document}
+\maketitle
+
+\section{Introduction}
+
+Mechanistic interpretation is the discovery of relationships between molecular entities such as genes, proteins, and RNA. Systems biology approaches this by studying the interactions between those entities rather than their individual properties~\cite{hartwell1999molecular, barabasi2004network}, seeking to identify \textit{modules}, groups of functionally related entities, and to characterize the mechanisms underlying their behavior. Because these interactions span multiple scales and regulatory layers, modern analysis relies on multiplex representations that hold the same genes across several types of edge~\cite{barabasi2011network, mucha2010community, de2013mathematical}, over which propagation methods such as random walk with restart (RWR) identify functionally related neighborhoods~\cite{kohler2008walking, cowen2017network}. Module-level analysis has become foundational for identifying disease mechanisms, prioritizing drug targets, and interpreting polygenic phenotypes~\cite{menche2015uncovering}, and methods such as iterative random forest (iRF)~\cite{basu2018iterative, cliff2019high} have accelerated it by constructing biologically informed networks that scientists explore to generate hypotheses.
+
+As these high-throughput and algorithmic methods increase the resolution and scope of networks, biological interpretation has become increasingly mediated by large, multi-scale graph structures. To comprehensively examine these large networks and supporting databases, mechanistic exploration requires iterative querying and multi-step reasoning. Although machine learning and AI methods such as \textsc{Mentor}~\cite{mentor} have refined mechanistic focus into groups of functionally related modules of genes, these modules can still be massive and intractable for individual researchers to systematically explore. Additionally, most research emphasizes a deep-but-narrow focus on a small subset of functionally related genes, which can overlook broader, yet biologically meaningful, network context, particularly in highly interactive systems such as living organisms. As biological networks grow in complexity, the combinatorial space of possible multi-hop interactions expands rapidly, while human interpretive capacity remains fixed.
+
+While large language models (LLMs) can synthesize large volumes of information, frontier inference cost scales with exploration length and reasoning depth, limiting agentic deployment for long-horizon network traversal. This mismatch creates a scaling limit in biological mechanistic interpretation: rich relational structures can be computed, but downstream synthesis remains constrained by human bandwidth and model cost. Consequently, the speed, breadth, and contextual depth of mechanistic discovery are limited, particularly for complex traits, polygenic diseases, and multi-layer regulatory systems.
+
+Open-source LLMs present an opportunity to aid scientists in mechanistic discovery tasks without being cost prohibitive. Language models reason more reliably when prompted to produce intermediate steps~\cite{wei2022chain, kojima2022large}, and equipping them with external tools supplies a layer of deterministic verification that reduces hallucination and preserves provenance~\cite{schick2023toolformer, yao2022react}. Adding an explicit verification stage improves factual reliability further, whether through iterative self-critique without weight updates~\cite{madaan2023selfrefine, shinn2023reflexion} or through a dedicated verifier with separate weights~\cite{eubiota}. Applied to gene set interpretation, these ideas have produced language-model embeddings of gene function~\cite{chen2025simple}, database-backed self-verifying pipelines~\cite{wang2025geneagent}, and multi-agent systems that synthesize mechanistic narratives~\cite{mentor-ia, eubiota}. However, these pipelines depend on frontier model inference, and none are trained end-to-end as a policy over verifiable rewards.
+
+Reinforcement learning supplies the machinery to close that gap. Preference optimization techniques, such as direct preference optimization (DPO), align a policy to pairwise judgments~\cite{christiano2017rlhf, ouyang2022instructgpt, dpo}, while policy gradient methods, such as proximal policy optimization (PPO) and group relative policy optimization (GRPO), optimize against scalar rewards over complete rollouts~\cite{schulman2017proximal, shao2024deepseekmath}. Verifiable rewards have been shown to elicit long-horizon reasoning behavior at frontier scale~\cite{guo2025deepseek}. These methods have been applied to tool-using agents for browsing, large API vocabularies, and multi-step web tasks~\cite{nakano2021webgpt, qin2023toolllm, putta2024agent}, but not to a policy whose rewards are grounded in network-derived biological targets.
+
+However, current systems share a limitation: they treat the network as a static object to query and retrieve, rather than learning the general rules it obeys. Nothing carries over to a network the system was not handed, so every new cell type, tissue, or disease has no prior representation. Because biological structure is itself context-specific, this is a large portion of the problem space. What is needed instead is a model that internalizes multiplex structure, a \textit{world model}, and reasons mechanistically from it.
+
+Sequence models trained on synthetic tasks form internal, causal models of the process behind their data, and those models generalize to states never seen during training~\cite{li2023othello}. This works because the rules that generate the data are compact and recur across many examples, while the specific data does not. Two consequences shape this proposal. First, a model can learn the operators that regenerate structure, but it cannot memorize irreducible content that follows no compact rule, so biological edge weights, walk scores, and distances belong in the runtime rather than in the weights. Second, a world model emerges only under dense sampling of the generating process, which a single network queried with fixed templates cannot supply.
+
+We therefore propose training \textsc{Mentor-RL} on a structured population of multiplex networks. Every network in the population is built by the same rule: the predictive expression network (PEN) layers selected for a biological context define its gene universe, the remaining layers are induced on that universe, and all layers are stacked. Varying the context, whether a cell type, a tissue, a brain region, or an organ system, varies the resulting network while holding the construction rule fixed. We call this population the \textit{multiplex lattice}, and it supplies the dense sampling that a single network cannot. The invariant we train on is the operator that maps a multiplex to its structure, together with the way layer composition drives it. We expect hierarchies to differ strongly across contexts, with distinct clades emerging in different cell types and regions, but that divergence is biological signal rather than artifact: a model that has learned the operator will produce correspondingly different hierarchies for different contexts, and recovering the divergence correctly is a stronger result than reproducing conservation.
+
+A hierarchy alone cannot serve as the world model, because it is a lossy abstraction of the multiplex it summarizes. Two clades that sit far apart in a tree may still be joined by short, biologically supported paths through bridge nodes in the underlying network, which is why a signal such as drug-target enrichment can appear in several distant branches and yet act through a single connected system. The model must hold the network itself and reason about the cross-clade connectivity that the tree suppresses. We use the hierarchy to find and prioritize candidates, and the network to confirm them.
+
+This proposal pursues four objectives. First, we define the multiplex lattice and ground it in a standard biological ontology, so that every network carries a canonical address and composition is the join operation over that ontology. Second, we design a supervised curriculum that trains on multiplex operators, holding the three structural views as co-equal targets and admitting a training example only when its target passes a typed validator against deterministic runtime output. Third, we use the resulting checkpoint to train a tool-using agent, formalized as a sequential decision process over a structured state and scored by deterministic, schema-grounded rewards. Fourth, we make the world-model claim falsifiable through two flagship evaluations: generating a hierarchy for a context never seen in training, and projecting a drug target onto the hierarchy before returning to the network to recover the connectivity that justifies it, supported by activation probes that test whether the recovered structure is causal. Together these aim to make mechanistic discovery broader, faster, and more context-aware.
+
+\section{Proposed Methods}
+\subsection{Multiplex Lattice}\label{sec:ch4-lattice}
+In this section, we define the multiplex lattice that is the substrate for our mechanistic world model. The lattice is constructed from a set of multiplex networks, where entities such as genes and proteins are represented as nodes, and their interactions within a context are represented as edges. We select PEN layers for a context to define its \textit{gene universe}, or the set of genes that the network operates over. The remaining, non-PEN layers are then \textit{induced} on that universe, restricted to the genes present in the PEN layers and the edges among them. Finally, all layers in the context are \textit{stacked} to form a multiplex network that captures the multi-layered interactions among genes in that context. This process means that there is no single shared backbone across the lattice; even layers drawn from a common source become context-specific once they are induced. Two sampled points in the lattice may contain different nodes and edges, and therefore different hierarchies. 
+
+The lattice comprises a tiered structure that captures the relationships between different contexts, and we visualize an example brain multiplex lattice in Figure~\ref{fig:lattice}. Its most granular component is a single cell type, such as an excitatory neuron, inhibitory neuron, or glial cell, within one tissue of one region. Combining cell types yields a tissue-level multiplex, combining tissues yields a region-level multiplex such as the prefrontal cortex, hippocampus, or cerebellum, and combining regions builds up to the whole-brain multiplex we already hold. Every tier is therefore a multiplex in its own right, built by the same rule, rather than a label over the tier below. Disease networks for anxiety, suicide, and pan-substance-use-disorder are points in this same lattice, which makes transfer meaningful: a model that has learned the construction operator can be applied to them directly.
+
+Higher tiers are built by applying the same rule to a union of contexts. We take the union of the parts' gene universes, re-induce the non-PEN layers on it, and stack the parts' PEN layers on top. This process makes lattice sampling highly combinatorial, as changing a single PEN layer changes two things at once. The gene universe grows or shrinks, and the backbone is re-induced to match. A pair of multiplexes that differ by one layer therefore also differ by the backbone that layer brought with it. Measuring the effect of a layer on its own requires holding the gene universe fixed, which we do via controlled ablation. The lattice also holds far more combinations than we can build, so tier counts and sampling rates stay provisional until divergence validation shows how much contexts actually differ.
+
+\subsection{Context Ontology}
+In order to train \textsc{Mentor-RL} in a reproducible way, we define a \textit{context ontology} that specifies the relationships between different contexts. This allows us to name, version, and match the lattice against external data. We use several grounded ontologies to define the context hierarchy. Anatomy is defined by UBERON~\cite{uberon}, while cell types are defined by the Cell Ontology~\cite{cellontology}, extended by the Provisional Cell Ontology~\cite{pcl} for transcriptomic brain types that the Cell Ontology does not yet hold. Developmental stages are defined by HsapDv, anatomy to cell type mappings are defined by the Human Reference Atlas~\cite{asctb}, and node metadata follows the CELLxGENE schema~\cite{cellxgene}. Because the Human Reference Atlas is a whole-body construction, this paradigm is extensible past the brain, allowing future scaling.
+
+It is important to note that the context ontology defines a partial order, not a tree, over contexts. Because some cell types are present in multiple tissues, and some tissues are present in multiple regions, strict hierarchies are not possible. Instead, we define a \textit{join} operation over the ontology: the join of two contexts is the smallest context that contains both of them. The join is also what ties the ontology to the construction rule. Joining two contexts names exactly the union multiplex described in Section~\ref{sec:ch4-lattice}. The ontology gives the address, and the construction rule builds the network.
+
+The model reads the ontology as supplied input, and it is never stored in the weights. Rather than memorizing the ontology, the model learns two separate things. First, it learns to navigate the ontology, returning a context's parents, children, and siblings, the join of two contexts, and the distance between them. It also learns the construction rule that turns a context into a multiplex. The ontology tells the model where it is, and the construction rule tells it what to build there. Because only the terms change, the same navigation transfers when the lattice extends to other organ systems.
+
+\subsection{Three Structural Views}
+In order to represent this ontology-based lattice structure as a training target, we define three equally weighted structural views of a multiplex network. These are bottom-up random-walk-with-restart lines-of-evidence (RWR-LOE) neighborhoods, top-down \textsc{Mentor}-derived hierarchies, and network connectivity. Each view is a different representation of the same underlying multiplex with its own biases.
+
+The RWR-LOE view is a bottom-up representation of a multiplex that captures the local topology around each node~\cite{kainer2025rwrtoolkit}. For each node in a given multiplex, we perform a random walk with restart over all layers of the multiplex, treating each layer as an independent line of evidence. The walk returns a probability distribution over all nodes in the network, with higher probabilities representing closer proximity to the seed. We then threshold the distribution using a geometric elbow, which cuts the score-versus-rank curve at its bend. The genes above the cutoff form a module of genes that are proximal to the seed over multiple lines of evidence. From RWR-LOE modules, we can learn several operator types, including rank and score lookup, rank comparison, and relations between modules.
+
+\textsc{Mentor}-derived modules represent an alternative, top-down view of the multiplex~\cite{mentor}. To create \textsc{Mentor} modules, we first use RWR to compute the probability distribution for each node in the multiplex. Then we use Spearman correlation to compute the pairwise similarity between the RWR vectors of each pair of nodes. We subtract those correlations from one to create dissimilarity scores, which we then use to build a dissimilarity matrix over all nodes in the multiplex. Finally, we use hierarchical clustering to create a dendrogram, in which leaves are genes and each internal node defines a \textit{clade}, the set of genes beneath it. Cutting the dendrogram at a given merge height produces a family of nested modules and controls their granularity. From \textsc{Mentor} modules, we can learn several operator types, including module membership, module comparison, least common ancestors, and distance between modules.
+
+Every one of these targets is read from a single dendrogram. Because we never compare one tree against another, we do not need two hierarchies to agree. This is what makes the divergence described in Section~\ref{sec:ch4-lattice} trainable rather than an obstacle: hierarchies differ across contexts, but each one supplies its own targets.
+
+However, RWR-LOE and \textsc{Mentor} modules are both lossy abstractions of the underlying multiplex structure. Two clades on distant branches of the dendrogram may still be connected by short paths through a small number of bridge nodes, and a neighborhood cut at the elbow drops genes that remain reachable in a few hops. As such, we also include learnable network connectivity operators as a third view, which include cross-clade path recovery, connector and bridge node identification, path decomposition by supporting layer, and cohesion tested against a null. These operators allow the model to reason about the underlying multiplex structure and recover connectivity that is not captured by the other two views.
+
+This view also carries a calibration rule. Distance in the dendrogram is not distance in the network, so the model must not read separation in the tree as separation in the multiplex. It must also not claim a direct interaction where only a cross-layer route exists. We therefore use the hierarchy to find and prioritize candidates, and the network to confirm them.
+
+\subsection{Stage 1: Multiplex World Model}
+
+\subsubsection{Deterministic Runtime and Tool Contract}
+
+\subsubsection{Supervised Curriculum}
+
+\subsubsection{Corpus Generation and Validation}
+
+\subsubsection{Splits and Leakage Control}
+
+\subsection{Stage 2: Mechanistic Agent}
+
+\subsubsection{Agent Loop and Structured State}
+
+\subsubsection{Task Cases and Targets}
+
+\subsubsection{Task Corpora and Trajectory}
+
+\subsubsection{Reward Design}
+
+\subsection{Training Pipeline and Curriculum}
+
+\subsection{Evaluation}
+\subsubsection{World Model Gates, Flagships, and Probes}
+
+\subsubsection{Comparative Evaluation and Ablations}
+
+\section{Expected Results}
+
+\section{Discussion}
+\subsection{Preliminary Results}
+
+\subsection{Plan of Work and Milestones}
+
+\subsection{Reproducibility}
+
+\subsection{Limitations and Future Work}
+
+
+
+\printbibliography
+\end{document}
