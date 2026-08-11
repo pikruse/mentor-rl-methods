@@ -58,40 +58,362 @@ It is important to note that the context ontology defines a partial order, not a
 
 The model reads the ontology as supplied input, and it is never stored in the weights. Rather than memorizing the ontology, the model learns two separate things. First, it learns to navigate the ontology, returning a context's parents, children, and siblings, the join of two contexts, and the distance between them. It also learns the construction rule that turns a context into a multiplex. The ontology tells the model where it is, and the construction rule tells it what to build there. Because only the terms change, the same navigation transfers when the lattice extends to other organ systems.
 
-\subsection{Three Structural Views}
-In order to represent this ontology-based lattice structure as a training target, we define three equally weighted structural views of a multiplex network. These are bottom-up random-walk-with-restart lines-of-evidence (RWR-LOE) neighborhoods, top-down \textsc{Mentor}-derived hierarchies, and network connectivity. Each view is a different representation of the same underlying multiplex with its own biases.
+\subsection{Three Structural Views}\label{sec:ch4-views}
+In order to represent this ontology-based lattice structure as a training target, we define three equally weighted structural views of a multiplex network. These are bottom-up random-walk-with-restart lines-of-evidence (RWR-LOE) neighborhoods, top-down \textsc{Mentor-EV}-derived hierarchies, and network connectivity. Each view is a different representation of the same underlying multiplex with its own biases.
 
 The RWR-LOE view is a bottom-up representation of a multiplex that captures the local topology around each node~\cite{kainer2025rwrtoolkit}. For each node in a given multiplex, we perform a random walk with restart over all layers of the multiplex, treating each layer as an independent line of evidence. The walk returns a probability distribution over all nodes in the network, with higher probabilities representing closer proximity to the seed. We then threshold the distribution using a geometric elbow, which cuts the score-versus-rank curve at its bend. The genes above the cutoff form a module of genes that are proximal to the seed over multiple lines of evidence. From RWR-LOE modules, we can learn several operator types, including rank and score lookup, rank comparison, and relations between modules.
 
-\textsc{Mentor}-derived modules represent an alternative, top-down view of the multiplex~\cite{mentor}. To create \textsc{Mentor} modules, we first use RWR to compute the probability distribution for each node in the multiplex. Then we use Spearman correlation to compute the pairwise similarity between the RWR vectors of each pair of nodes. We subtract those correlations from one to create dissimilarity scores, which we then use to build a dissimilarity matrix over all nodes in the multiplex. Finally, we use hierarchical clustering to create a dendrogram, in which leaves are genes and each internal node defines a \textit{clade}, the set of genes beneath it. Cutting the dendrogram at a given merge height produces a family of nested modules and controls their granularity. From \textsc{Mentor} modules, we can learn several operator types, including module membership, module comparison, least common ancestors, and distance between modules.
+\textsc{Mentor-EV}-derived modules represent an alternative, top-down view of the multiplex. \textsc{Mentor-EV} applies \textsc{Mentor}~\cite{mentor} using every gene in the multiplex as a seed, so the resulting hierarchy spans the full gene universe rather than a supplied gene set. To create \textsc{Mentor-EV} modules, we first use RWR to compute the probability distribution for each node in the multiplex. Then we use Spearman correlation to compute the pairwise similarity between the RWR vectors of each pair of nodes. We subtract those correlations from one to create dissimilarity scores, which we then use to build a dissimilarity matrix over all nodes in the multiplex. Finally, we use hierarchical clustering to create a dendrogram, in which leaves are genes and each internal node defines a \textit{clade}, the set of genes beneath it. Cutting the dendrogram at a given merge height produces a family of nested modules and controls their granularity. From \textsc{Mentor-EV} modules, we can learn several operator types, including module membership, module comparison, least common ancestors, and distance between modules.
 
 Every one of these targets is read from a single dendrogram. Because we never compare one tree against another, we do not need two hierarchies to agree. This is what makes the divergence described in Section~\ref{sec:ch4-lattice} trainable rather than an obstacle: hierarchies differ across contexts, but each one supplies its own targets.
 
-However, RWR-LOE and \textsc{Mentor} modules are both lossy abstractions of the underlying multiplex structure. Two clades on distant branches of the dendrogram may still be connected by short paths through a small number of bridge nodes, and a neighborhood cut at the elbow drops genes that remain reachable in a few hops. As such, we also include learnable network connectivity operators as a third view, which include cross-clade path recovery, connector and bridge node identification, path decomposition by supporting layer, and cohesion tested against a null. These operators allow the model to reason about the underlying multiplex structure and recover connectivity that is not captured by the other two views.
-
-This view also carries a calibration rule. Distance in the dendrogram is not distance in the network, so the model must not read separation in the tree as separation in the multiplex. It must also not claim a direct interaction where only a cross-layer route exists. We therefore use the hierarchy to find and prioritize candidates, and the network to confirm them.
+However, RWR-LOE and \textsc{Mentor-EV} modules are both lossy abstractions of the underlying multiplex structure. Two clades on distant branches of the dendrogram may still be connected by short paths through a small number of bridge nodes, and a neighborhood cut at the elbow drops genes that remain reachable in a few hops. As such, we also include learnable network connectivity operators as a third view, which include cross-clade path recovery, connector and bridge node identification, path decomposition by supporting layer, and cohesion tested against a null. These operators allow the model to reason about the underlying multiplex structure and recover connectivity that is not captured by the other two views.
 
 \subsection{Stage 1: Multiplex World Model}
+We propose a two-stage training pipeline for \textsc{Mentor-RL}. In the first stage, we train a world model to internalize the multiplex lattice by learning the operators that generate its structure. We outline the framework for stage 1 in this section. Section~\ref{sec:ch4-runtime} describes the deterministic runtime and tools that are used to generate targets. Section~\ref{sec:ch4-curriculum} covers the supervised curriculum that progressively teaches the model to navigate the lattice. Section~\ref{sec:ch4-corpus} describes how corpora are generated and validated for each curriculum stage, and Section~\ref{sec:ch4-splits} details the train, validation, and test splits across contexts.
 
-\subsubsection{Deterministic Runtime and Tool Contract}
+\subsubsection{Deterministic Runtime and Tool Contract}\label{sec:ch4-runtime}
 
-\subsubsection{Supervised Curriculum}
+To interface the lattice environment with the training pipeline, we use a compiled native multiplex library exposed to Python through \texttt{ctypes} bindings~\cite{cpp}. Corpus construction, training, and optimization code are implemented in Python~\cite{python}, while graph storage and graph operations are handled by the native runtime for efficient execution on large multiplexes. Multiplex networks are persisted as raw, CSR-style binary stores described by JSON manifests; all graph input and output is binary, with the manifest carrying the layer names, node, and build metadata needed to load the graph.
 
-\subsubsection{Corpus Generation and Validation}
+The runtime uses a set of optimized multiplex functions developed as part of the \textsc{Mentor}~\cite{mentor} and \textsc{Mentor-IA}~\cite{mentor-ia} projects known as RWR++. Core operators include neighborhood retrieval, shortest-path search, random walk with restart on both monoplex and multiplex views, and subgraph induction. These operators provide the primary graph-facing actions available to the model.
 
-\subsubsection{Splits and Leakage Control}
+We define several rules to structure our graph tools as learnable and interpretable operators. First, each tool only takes biologically meaningful arguments, such as gene identifiers, layer names, and module identifiers. This way, when learning to produce a tool call, the model is reasoning about the biology rather than the file system or command-line interface. Second, we defer to the runtime for numeric computations. The tokenization process makes it difficult for the model to learn to produce precise floating-point numbers, so we instead have the model call a tool to compute any statistic it needs. Third, we enforce determinism, ensuring that the same arguments, graph version, layer scope, and parameter version always return identical output. This allows for caching of tool calls and reproducible scoring.
+
+All runtime operators return both graph objects and provenance metadata. In addition to nodes, edges, and scores, each returned object records the relevant layer identity, operator parameters, and source information needed to trace the final interpretation back to the graph evidence used to construct it. To ensure consistency across serialized multiplex files, C++ runtime objects, Python wrappers, and logged training artifacts, all nodes are represented in a single canonical identifier space and all edges are referenced using deterministic, layer-aware identifiers. We list all runtime tools in Table~\ref{tab:ch4-tools}.
+
+\begin{table}[htb!]
+\centering
+\caption{Model-facing RWR++ tool vocabulary. Related calls are grouped by function while preserving the tool names the model emits. The final column gives the curriculum step at which each group is introduced (Section~\ref{sec:ch4-curriculum}).}
+\label{tab:ch4-tools}
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.1}
+\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{0.27\textwidth} Y >{\raggedright\arraybackslash}p{0.20\textwidth} >{\centering\arraybackslash}p{0.05\textwidth}@{}}
+\toprule
+\textbf{Tool(s)} & \textbf{Purpose} & \textbf{Primary inputs} & \textbf{Step} \\
+\midrule
+\texttt{get\_neighbors}; \texttt{induce\_subgraph}
+  & Direct neighbors of a gene and the edges induced within a gene set
+  & gene or gene set; layer scope & S2 \\
+\addlinespace
+\texttt{get\_gene\_layers}; \texttt{get\_nodes\_by\_layer}; \texttt{get\_layer\_stats}; \texttt{get\_component\_summary}
+  & Layer membership, presence of a set in a layer, per-layer statistics, and connected components
+  & genes; layer identifiers & S2 \\
+\addlinespace
+\texttt{shortest\_paths}; \texttt{get\_path\_layer\_counts}
+  & Shortest paths within and across layers, and the per-layer edge counts supporting a path
+  & source and target genes; path & S3 \\
+\addlinespace
+\texttt{rwr}; \texttt{rwr\_loe}
+  & Random-walk expansion from seeds, and leave-one-out relatedness with its elbow cutoff
+  & seed genes; query genes; \texttt{top\_k} & S4 \\
+\addlinespace
+\texttt{get\_rank}; \texttt{get\_distance}
+  & Rank of a target gene from a seed, and pairwise distance under a stated metric
+  & source and target genes; metric & S4 \\
+\addlinespace
+\texttt{get\_seed\_essentiality}; \texttt{get\_layer\_ablation}; \texttt{get\_node\_perturbation}
+  & Effect of removing a seed, a layer, or a node on the resulting neighborhood
+  & seed genes; layers; genes & S4, S6 \\
+\addlinespace
+\texttt{get\_clade}; \texttt{get\_lca}; \texttt{get\_subtree}; \texttt{get\_clade\_relations}
+  & Clade membership, lowest common ancestor of a gene pair, the subtree induced by a cut, and parent, child, and sibling relations
+  & clade or module identifier; gene pair; cut height & S5 \\
+\addlinespace
+\texttt{rwr\_netstats}
+  & Module and cohesion statistics, with an empirical $p$-value where applicable
+  & module identifiers; statistic; null size & S5, S6 \\
+\addlinespace
+\texttt{query\_mygene}; \texttt{enrich\_gene\_set}
+  & Gene annotation, and functional or module enrichment of a gene set
+  & query or gene set; \texttt{against}; thresholds & S7 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsubsection{Supervised Curriculum}\label{sec:ch4-curriculum}
+In order to train the model to internalize the multiplex lattice, we design a supervised curriculum that progressively teaches the model to navigate the lattice and learn operators that generate its structure. We define two rules to govern the structure of the curriculum. First, we use closed-book training only on targets that are bounded, stable conventions. Identifiers such as layer tags, layer families, module identifier formats, and direction conventions are small, finite, and do not change, so memorizing them through training is acceptable. Second, open-book training means reading, not computing. We read unbounded and unstable outputs, such as continuous values and statistics, from the runtime rather than memorizing them. Later in the curriculum, rule two becomes extended to tool-call training, where the model learns to parse returned objects instead of restating these objects from memory. This distinction between what the model can memorize and what it must compute is important for generalization: the model should learn the operators that generate structure, not the specific values that result from them.
+
+Using these rules, we define a nine-step supervised training curriculum that gradually introduces more complex operators and tasks. Each stage builds on the previous one, starting with basic graph navigation and moving towards more complex tasks such as module comparison, path recovery, and enrichment analysis. For brevity, we group similar curriculum stages together when describing them. However, a full curriculum table is provided in Table~\ref{tab:ch4-curriculum}.
+
+Curriculum stages S0-S3 focus on foundational graph navigation operators. First, S0 learns ensembl-to-symbol and symbol-to-ensembl conversions, which are necessary for all downstream tasks. S1 introduces the lattice coordinate system, teaching the model to navigate the context ontology, retrieve layer information, and understand the meanings behind rankings and metrics. S2 trains on atomic graph facts and their negative examples, such as edge existence, neighbors, layer membership, and degree. S3 introduces path-based operators and cross-layer operators, and it teaches connectivity by training on connector and bridge nodes.
+
+After foundational training is complete, stages S4-S6 focus on the three structural views of the multiplex. S4 teaches the model to operate on bottom-up RWR-LOE neighborhoods, S5 trains the model for top-down hierarchical modules, and S6 focuses on unifying these views through network connectivity. Additionally, S5 includes training examples that teach correspondence between the RWR-LOE and \textsc{Mentor-EV} views, which keeps them from being learned as unrelated skills.
+
+Stages S7 and S8 build learned lattice structure concepts by adding projection and enrichment tasks. S7 teaches gene set projection through the composition of RWR-LOE and \textsc{Mentor-EV} operators; first, RWR-LOE is performed on a target gene set, and then the resulting neighborhood is enriched against the \textsc{Mentor-EV} module hierarchy at every level. The projection process yields an enrichment score and significance value for every clade at every level, measuring how much of the target's neighborhood falls within it. High enrichment across several distant clades is evidence of a single connected system, rather than unrelated biological processes. This reinforces the idea that tree distance does not mean that clades are unrelated (Section~\ref{sec:ch4-views}). Therefore, the recovery of bridge nodes and short cross-clade paths, along with the layers supporting them, is essential. S8 teaches composition: the model learns to predict how neighborhoods, clades, and connectivity change when a layer is added or removed, which is crucial for understanding the contextual differences across sampled lattice points.  
+
+Finally, S9 consolidates the curriculum by combining previous stages and trains the checkpoint for the multi-step reasoning required in Stage 2. The model is trained on tool-call construction, selection, parsing, provenance, and task refusal, all of which are crucial for the mechanistic agent to operate effectively in the multiplex lattice. 
+
+The curriculum structure allows us to scale difficulty along several axes during training. We scale lattice tier, starting with single cell types and moving to tissues, regions, and eventually the entire brain. Cut-height granularity defines the size of modules, starting with coarse views of clades and moving to finer-grained views. We also scale operator complexity and book mode explicitly through our curriculum design. To measure progress along these axes, we define gates that the model must pass to move on to the next curriculum stage. All gates utilize held-out question phrasings and held-out graph regions per family, while also including negative examples to measure abstention. These gates are task-specific, ensuring that the model has correctly learned the operators from each curriculum stage before moving on to the next.
+
+\begin{table}[htb!]
+\centering
+\caption{The ten-stage supervised curriculum. Book mode indicates whether targets are memorized (closed), read from supplied context (open), or produced by constructing and parsing a tool call. Data shares are provisional and will be reset once divergence validation establishes how strongly contexts differ across the lattice.}
+\label{tab:ch4-curriculum}
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.1}
+\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{0.03\textwidth} Y >{\raggedright\arraybackslash}p{0.075\textwidth} >{\centering\arraybackslash}p{0.055\textwidth} Y@{}}
+\toprule
+& \textbf{Focus} & \textbf{Book mode} & \textbf{Share} & \textbf{Gate} \\
+\midrule
+S0 & Entity normalization between symbols and Ensembl identifiers, including ambiguous symbols
+   & closed & 4\% & Near-perfect accuracy on held-out identifiers, and correct deferral on ambiguous symbols \\
+\addlinespace
+S1 & Lattice coordinate system: context ontology navigation, layer tags and families, module identifiers, and direction conventions
+   & closed & 4\% & Near-perfect accuracy on held-out tags and module identifiers \\
+\addlinespace
+S2 & Atomic graph facts: edge existence, neighbors, layer membership, degree and hubness, components, and calibration negatives
+   & open & 14\% & Per-family accuracy on held-out graph regions and phrasings, and correct refusal on calibration negatives \\
+\addlinespace
+S3 & Paths and cross-layer routes, path decomposition by layer, and connector and bridge nodes
+   & open & 8\% & Path and bridge recovery on held-out graph regions \\
+\addlinespace
+S4 & Bottom-up RWR-LOE neighborhoods: rank and score lookup, comparison, the elbow, leave-one-out support, and stability
+   & open, tool & 16\% & Recovery and comparison accuracy stratified by distractor band \\
+\addlinespace
+S5 & Top-down \textsc{Mentor-EV} hierarchy: clade membership, lowest common ancestor, subtree at a cut, and correspondence with RWR-LOE
+   & open & 16\% & Hierarchy-navigation accuracy across cut heights, and correct cross-source containment \\
+\addlinespace
+S6 & Cross-clade connectivity: short paths between distant clades, bridge nodes, layer support, and cohesion against a null
+   & open & 12\% & Cross-clade path recovery, and correct rejection of the false-separation reading \\
+\addlinespace
+S7 & The projection operation: seed a neighborhood, enrich it against every level of the hierarchy, and return to the network
+   & open, tool & 12\% & Correct projection, connectivity recovery, and interpretation, scored separately \\
+\addlinespace
+S8 & Composition and lattice scaling: predicting how neighborhoods, clades, and connectivity change when layers are added or removed
+   & open, tool & 8\% & Correct structure on unions assembled from parts seen in training \\
+\addlinespace
+S9 & Tool-call consolidation: selection, argument construction, result parsing, provenance, and refusal of raw path arguments
+   & tool & 6\% & Schema-valid tool-call rate and correct parsing on held-out tools and phrasings \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsubsection{Corpus Generation and Validation}\label{sec:ch4-corpus}
+To build the training corpora for each curriculum stage, we generate questions procedurally from various points on the lattice. By sampling many contexts and layers, we allow the model to see each operator applied to many different networks, which encourages generalization. All targets have their ground truth produced by the deterministic runtime defined in Section~\ref{sec:ch4-runtime}, and examples are cached with their layer descriptor, metric, seed set, and graph version to ensure reproducibility. Rather than generating corpora for all curriculum stages at once, we generate them on demand for each stage, allowing us to adjust sampling strategy and training splits based on prior stage performance. 
+
+In order to validate our corpus, we check every answer field against a typed validator, and each question family composes the validators its fields require. A path field, for example, is accepted only when the node sequence is a valid walk whose length matches the runtime shortest path, so any optimal path is accepted rather than a single reference answer. A claim field is accepted only when the stated claim appears in the enumerated allowed set and no disallowed claim is asserted, which is the mechanism behind the calibration negatives in S2. Validation is all-or-nothing: an example enters the corpus only if every required field passes. In addition to admitting training data, these validators are used at evaluation time to score model outputs, ensuring that answers meet the criteria defined by the curriculum. This validation process gives us deterministic ground truth for training and evaluation, allowing us to measure the model's performance accurately and consistently across contexts and curriculum stages.
+
+In order for the model to effectively learn, we must generate a large dataset to provide sufficient signal. Our provisional lattice corpus will include 24 separate contexts alongside a full brain multiplex. Formatting questions from these contexts, we expect to generate approximately 3 million supervised examples, with roughly 10\% closed-book, 75\% open-book, and 15\% tool-call examples. From these 3 million examples, we expect about 1.2 billion training tokens. Storage is dominated by the cached ground truth rather than the text, at an estimated 2 to 4 terabytes across the 24 contexts, which is the second reason to materialize corpora in curriculum order rather than all at once. However, these numbers are provisional and will be adjusted based on the training results at each curriculum stage.
+
+\subsubsection{Splits and Leakage Control}\label{sec:ch4-splits}
+In order to truly evaluate generalization capability, we must thoroughly control for leakage between training, validation, and test splits. While each context contains a separate network, these networks still share genes, and therefore share some of the underlying edges among those genes. To control for leakage, we define three levels of hold-out validation: context, clade, and tuple. To hold out a context, we partition lattice points into training, validation, and test sets, ensuring that they are never split internally by gene. We choose two to four contexts to hold out entirely from our 24-context lattice, so these hierarchies are never seen during training. 
+
+In addition to contexts, we hold out clades by selecting maximal subtrees at a chosen anchor height. This is necessary because a gene appears in every clade along its hierarchical ancestry; therefore, splitting by individual clades could leak membership information due to the dendrogram's nested structure.
+
+Finally, we partition specific query units into separate splits. A query unit is a seed with its target set, together with the cut height for hierarchical modules. We validate these test tuples by checking their Jaccard overlap with training tuples. A test tuple is permissible only if its target set has a Jaccard overlap below a provisional 0.2 with any training tuple sharing the same seed. Two further controls apply at this level. We cap how many high-degree seeds enter any single split, because RWR-LOE neighborhoods around hub genes overlap heavily even when contexts and clades are cleanly separated. We also keep both members of an S8 minimal pair on the same side of the split, so that a held-out multiplex is never trivially inferable from a partner that differs from it by a single PEN layer.
+
+In order to ensure compliance with this leakage control, we audit the training, validation, and test splits for each curriculum stage. We check gene overlap between train and test sets, the fraction of test clades whose ancestry appears in train, the representation of hub nodes in the data, and the count of minimal pairs split across sides, which should be zero. If any of these checks fail, then splits are readjusted and corpora are regenerated. One source of leakage remains after these controls. Because contexts share genes, they also share the backbone edges among those shared genes, so this component is bounded and reported rather than removed. We accept it because what is invariant across the lattice is the construction operator rather than any particular backbone. This process ensures that the model is evaluated on truly unseen data, and the extent of any leakage is known and stored prior to evaluation.
 
 \subsection{Stage 2: Mechanistic Agent}
+After training \textsc{Mentor-RL} on all curriculum stages, we use the resulting checkpoint to initialize a mechanistic agent that can explore the multiplex lattice and generate mechanistic interpretations. The agent is trained using reinforcement learning over long-horizon mechanistic reasoning tasks. We formalize the agent loop and structured state in Section~\ref{sec:ch4-agent-loop}, and we describe the task cases, corpora, and reward design in Sections~\ref{sec:ch4-task-cases}--\ref{sec:ch4-reward}. Section~\ref{sec:ch4-training-pipeline} details the full training pipeline and curriculum for the mechanistic agent.
 
-\subsubsection{Agent Loop and Structured State}
+\subsubsection{Agent Loop and Structured State}\label{sec:ch4-agent-loop}
 
-\subsubsection{Task Cases and Targets}
+% ===== LIFTED from main.tex:86-162, notation trimmed. ======================
+% Removed: the standalone D_t display equation (now inline in the one
+% iteration formalization), the standalone z_t display, Algorithm 1 (it
+% restated the same equations line by line), and the agent-loop figure.
+% Merged: "Working Interpretation" and "Structured State" subsubsections.
+% ~583w -> ~340w.
+We model mechanistic exploration as a sequential decision process executed by a single policy with an internal self-verification step. The loop begins when the user provides a query $q$ and optional evidence $e$, which may include free text, seed genes, or a multiplex. These initialize the working interpretation $I_0$ and the structured state $S_0$.
 
-\subsubsection{Task Corpora and Trajectory}
+At each step the policy first acts. Given the current decision context, it emits a textual reasoning step $r_t$ naming its current subgoal, together with an optional tool call $a_t$. A tool call is executed by the deterministic runtime $\varepsilon$ of Section~\ref{sec:ch4-runtime} to produce an observation $o_t$; when no call is made, the observation is empty. The same policy then verifies. Conditioned on the decision context and on its own reasoning, action, and observation, it updates the interpretation and state and emits a continuation decision $z_t$ of \texttt{continue}, \texttt{revise}, or \texttt{stop}. A decision of \texttt{revise} means the next iteration corrects the interpretation and state rather than extending them. One iteration is therefore
+\[
+r_t, a_t \sim \pi_{\theta}^{\mathrm{act}}(\cdot \mid D_t), \qquad
+o_t = \varepsilon(a_t), \qquad
+I_{t+1}, S_{t+1}, z_t \sim \pi_{\theta}^{\mathrm{verify}}(\cdot \mid r_t, a_t, o_t, D_t),
+\]
+where $D_t = (q, e, I_t, S_t)$ is the decision context and $\varepsilon(\varnothing) = \varnothing$ by convention. The actor and verifier are two prompting modes of the same weights, so biological vocabulary and tool-use competence learned in one mode transfer to the other. We treat the risk that the verifier collapses into agreement with the actor as a monitoring concern during training. The loop repeats until the policy emits \texttt{stop} or the decision budget $T_{\max}$ is exhausted, and returns the pair $(I_T, S_T)$: a human-readable answer grounded in the accumulated evidence, and the machine-readable record used for scoring and provenance.
 
-\subsubsection{Reward Design}
+The working interpretation holds the current mechanistic claim, the main evidence supporting that claim, any uncertainty, conflict, or alternative explanation, and the next subgoal the model is trying to resolve. The structured state stores the same hypothesis in a machine-readable form suitable for tool execution, reward computation, and provenance tracking. It contains:
+\begin{enumerate}
+    \item the user-provided anchors $(q, e)$,
+    \item the current relationship status: unknown, partially observed group, validated group, multiple groups, or insufficient support,
+    \item the current predicted group or groups,
+    \item the evidence and provenance collected so far,
+    \item the current predicted mechanistic labels, each tied to the evidence that supports it,
+    \item the tool-use counters recording total and invalid calls, and
+    \item the remaining budget and continuation state, with the termination signal recorded at the end of the trajectory.
+\end{enumerate}
 
-\subsection{Training Pipeline and Curriculum}
+To ensure that the agent's reasoning is grounded in evidence, we enforce three operating rules. First, every claim must be supported by retrieved evidence, and the agent must state its uncertainty explicitly, or abstain from making a claim when support is weak. Second, the agent must read the \textsc{Mentor-EV} dendrogram modules as an index and confirm its hypotheses on the network, using the same multi-view structure described in Section~\ref{sec:ch4-views}. Finally, the agent must return both a human-readable working interpretation for users and a structured state for record-keeping. These rules are enforced through the reward function and training curriculum, which reinforce these behaviors during the learning process.
+
+\subsubsection{Task Cases and Targets}\label{sec:ch4-task-cases}
+We define several tasks and targets for agent training, all of which build on the internalized lattice representation learned in Stage 1. Tasks are divided into three categories: module, connectivity, and projection tasks. For each task, we define a set of targets that we can use to provide deterministic rewards and evaluate the agent's performance.  
+
+Module tasks fall into one of four cases: partial group completion, mechanism explanation, group refinement, and recognition of no shared mechanism. In partial group completion, the agent is given a module with some genes held out and must identify the complete module by adding genes. In mechanism explanation, the agent is given a complete module and must identify the mechanistic evidence that supports it without adding or removing genes. In group refinement, the agent is given a module with extra distractor genes, and it must remove the distractor genes to distill the module into a mechanistically coherent group. Finally, in the recognition of no shared mechanism case, the agent is given a module that is not mechanistically coherent. It must either split the input into several coherent groups, or report that the evidence provides insufficient support for any shared mechanism.
+
+Connectivity tasks join the two module views through the network that underlies both. The agent is given two clades that are distant in the \textsc{Mentor-EV} hierarchy and must identify a short path between them, along with the layers that support that path. The agent must also identify any bridge nodes that connect the two modules, and provide mechanistic evidence for the role of those bridge nodes. This task tests the agent's ability to reason about the underlying multiplex structure and recover connectivity that is not captured by the bottom-up or top-down views alone.
+
+Finally, we train the model on projection tasks, which require the agent to project a seed gene's RWR-LOE neighborhood onto the \textsc{Mentor-EV} hierarchy and identify the clades that are enriched for that neighborhood. Because the neighborhood was built by propagation over the network, enrichment landing in several distant clades is evidence of a single connected system rather than unrelated processes, and the agent must read it that way. It must then recover the bridge nodes and short paths that connect those clades and provide mechanistic evidence for their role. Projection tasks are scored on three targets separately: the projection itself, the connectivity recovered to support it, and the interpretation placed on that connectivity. A candidate passes only when all three clear, since a correct projection paired with a failed connectivity recovery is precisely the error that the network view exists to prevent.
+
+The agent curriculum culminates in the applied case, in which the projected seed is a drug target or a disease signal. Here the agent must additionally apply directional and translational filtering. Directional filtering asks whether the candidate intervention opposes the disease-associated direction within a specific module rather than merely acting near it. Translational filtering ranks surviving candidates on evidence strength, adverse-event risk, brain penetration, feasibility, and testability. This case is the repurposing workflow that motivates the disease projections described in Section~\ref{sec:ch4-lattice}.
+
+To provide deterministic rewards, we use module membership targets, which are hidden gene sets drawn from bottom-up RWR-LOE neighborhoods and top-down \textsc{Mentor-EV} modules. The agent must identify the correct complete module given either a module with genes held out, a module with extra distractor genes, or a combination of multiple modules. The agent never sees the ground truth modules, so it must determine them based on multi-step reasoning over multiplex structure. Because these modules are derived computationally from network structure, they usually carry no per-entry experimental annotation, so there is no hidden label against which an explanation could be matched. We therefore define mechanistic evidence targets, which score interpretations against the evidence that the model retrieves during exploration. This rewards claims that are grounded in what the agent actually found rather than claims that reproduce an existing annotation, and it leaves room for biology that no database yet records.
+
+\subsubsection{Task Corpora and Trajectory Generation}\label{sec:ch4-corpora}
+In order to train the mechanistic agent, we generate a corpus of module tasks drawn from contexts across the lattice. We use two sources of modules: top-down \textsc{Mentor-EV} modules, and bottom-up RWR-LOE neighborhoods. These sources provide complementary views of the multiplex while supplying hidden targets for scoring. Additionally, we generate connectivity and projection tasks from the same lattice points, allowing us to incorporate the global network structure into the agent's reasoning. 
+
+For each module of size $n$, we deterministically materialize up to four task instances, one per case in Section~\ref{sec:ch4-task-cases}. This ensures that all four task types are represented for as many modules as possible rather than sampled independently. The \texttt{explanation} instance uses the full module as input. The \texttt{recovery} instance drops $k_{\text{drop}}$ genes from the module and the \texttt{refinement} instance adds $k_{\text{add}}$ noise genes, with the full module remaining the hidden target in both cases. The number of genes added or dropped scales with the task difficulty and module size, so that harder instances perturb a larger fraction of the module. The \texttt{none} instance constructs a pseudo-module of unrelated genes as input, with an empty hidden target.
+
+The two module sources differ only in where distractors come from. For \textsc{Mentor-EV} modules, noise and \texttt{none} genes are drawn from difficulty-modulated \textit{dendrogram distance bands}, defined by walking up the module's ancestry in the tree, so that difficulty controls how topologically close the distractors are to the module. For RWR-LOE modules we substitute rank bands, drawing from ranks just beyond, moderately beyond, or far beyond the seed's elbow cutoff. In both cases \texttt{none} genes are additionally constrained to be conflict-free, so that the sampled genes do not form a coherent module of their own, and all selection is deterministic given a fixed seed, making the corpus reproducible. Module-size bins are assigned after construction from the realized module sizes, and all splits follow the protocol of Section~\ref{sec:ch4-splits}.
+
+For connectivity and projection tasks, we build on previously sampled modules. For connectivity, we sample pairs of clades at a stated tree distance and generate the shortest path between them, along with the layers that support that path. For projection, we sample seed genes and compute their RWR-LOE neighborhoods, and then enrich those neighborhoods against the \textsc{Mentor-EV} hierarchy to identify the clades that are enriched for that neighborhood. The agent must then recover the bridge nodes, paths, and layers that connect those clades, and provide mechanistic evidence for their role. These tasks are scored on three targets separately: the projection itself, the connectivity recovered to support it, and the interpretation placed on that connectivity. 
+
+\begin{algorithm}
+\caption{Trajectory Generation for SFT and DPO}\label{alg:ch4-trajectory-gen}
+\begin{algorithmic}
+    % require policy, runtime, and hyperparameters
+    \Require $\pi^{act}_\theta, \pi^{verify}_\theta$, runtime $\varepsilon$, $T_{\max}, n_{act}, n_{ver}, n_{cov}$, directives $\{d_i\}$, pair margin $\tau$, selection tolerance $\epsilon$.
+
+    % sample a module task and evidence mode from the precomputed corpus
+    \State Sample module task $(C^\text{in}, C, C_\text{type})$ and evidence mode $\rho$.
+    \State $q, e^\text{user} \sim Q_\text{templates}(\cdot \mid C^\text{in}, C, C_\text{type}, \rho)$.
+    
+    % 0-init the interp and structured state along with trajectory, pref, and findings 
+    \State $(I_0, S_0) \gets \mathrm{InitState}(q, e^\text{user}, C^\text{in})$.
+    \State $\tau^\star \gets [\ ]$, \quad $\mathcal{P} \gets [\ ]$, \quad $\mathcal{F} \gets [\ ]$, \quad $T \gets 0$
+    
+    \State $z_{-1} \gets \texttt{continue}$
+
+    % begin traj loop
+    \For{$t = 0, 1, \dots, T_{\max} - 1$}
+        % check for stop case (budget/continuation)
+        \If{$z_{t-1} = \texttt{stop}$ \textbf{or} $\mathrm{budget}(S_t) \le 0$} \textbf{break} \EndIf
+        
+        % init decision context
+        \State $D_t \gets (q, e^{user}, I_t, S_t)$, \quad $\mathcal{C}_t \gets [\ ]$, \quad $\mathcal{A} \gets [\ ]$
+        
+        % sample candidate actions and reasoning
+        \For{$i = 0, \dots, n_{act}-1$}
+            \State $(r_{t,i}, a_{t,i}) \sim \pi^{act}_\theta(\cdot \mid D_t, d_i)$; \quad append to $\mathcal{A}$
+        \EndFor
+        
+        % if tool call fails, retry with tool-coverage directive  
+        \If{$C_\text{type} \in \{\texttt{recovery}, \texttt{refinement}\}$ \textbf{and} no $a \in \mathcal{A}$ is a tool call}
+            \For{$i = 0, \dots, n_{cov}-1$}
+                \State $(r, a) \sim \pi^{act}_\theta(\cdot \mid D_t, d^{\text{cov}}_i)$; \quad append to $\mathcal{A}$
+            \EndFor
+        \EndIf
+
+        % execute tool calls, apply verifier policy, update interp/state, and then score branches
+        \For{each $(r_{t,i}, a_{t,i}) \in \mathcal{A}$}
+            \State $o_{t,i} \gets \varepsilon(a_{t,i})$ if $\mathrm{ValidTool}(a_{t,i}, S_t)$ else $\varnothing$
+            \For{$j = 0, \dots, n_{ver}-1$}
+               \State $(I'_{t,i,j}, S'_{t,i,j}, z'_{t,i,j}) \sim \pi^{verify}_\theta(\cdot \mid D_t, r_{t,i}, a_{t,i}, o_{t,i})$
+               \State $s^{local}_{t,i,j} \gets \mathrm{LocalScore}(D_t, I'_{t,i,j}, S'_{t,i,j}, r_{t,i}, a_{t,i}, o_{t,i}, z'_{t,i,j}; C, C_{\text{type}})$
+               \State Append $c_{t,i,j}$ to $\mathcal{C}_t$
+            \EndFor
+        \EndFor
+
+        % normalize scores, select branch, make preference pair for this iteration, update trajectory and findings, and update interp/state
+        \State $\mathrm{NormalizeScores}(\mathcal{C}_t)$
+        \State $(i^\star, j^\star) \gets \mathrm{SelectBranch}(\mathcal{C}_t; \epsilon)$
+        \State $\mathcal{P} \gets \mathcal{P} \cup \mathrm{MakePreferencePairs}(\mathcal{C}_t, c_{t,i^\star,j^\star}, \tau)$
+        \State Append $(I_t, S_t, c_{t,i^\star,j^\star})$ to $\tau^\star$; \quad $f_t \gets \mathrm{RenderFinding}(\cdot)$; append $f_t$ to $\mathcal{F}$
+        \State $(I_{t+1}, S_{t+1}) \gets (I'_{t,i^\star,j^\star}, S'_{t,i^\star,j^\star})$; \quad $T \gets t+1$
+    \EndFor
+    % render final mech summary, return trajectory, prefs, findings, and summary
+    \State $m \gets \mathrm{RenderSummary}(S_T, \mathcal{F})$
+    \State \Return $\tau^\star, \mathcal{F}, m, \mathcal{P}$
+\end{algorithmic}
+\end{algorithm}
+
+Given a sampled task and initialized state, we sample multiple action candidates $(r_{t,i}, a_{t,i})$ given the current decision context $D_t$ and execute valid tool calls in the deterministic graph runtime. To ensure that candidates with the same prefix explore genuinely distinct regions of the action space, we use verbalized sampling based on the task type. For example, recovery prompts bias candidates towards random-walk expansion, neighborhood expansion, subgraph validation, or a direct decision, while insufficient evidence (\texttt{none}) prompts direct the model towards disconfirming graph evidence. When a sampling round for recovery or refinement tasks fails to produce valid tool calls, we issue a tool-coverage retry that requires a valid graph operator whenever one can be formed, which prevents the branch pool from degenerating into tool-free continuations. Conditioned on each candidate action and observation, the same policy then samples multiple verification candidates, yielding a tree of candidate next states rooted at a shared prefix. The branched sampling scheme is visualized in Figure~\ref{fig:shared-prefix}.
+
+Each candidate branch is assigned a deterministic local score computed from the structured state, runtime outputs, and hidden module targets. These local scores are used to rank same-prefix candidates and mine DPO preference pairs against that selection. Because several branches frequently tie or fall within a small margin of each other, continuation selection does not reduce to a strict $\arg\max$, but instead, within a tolerance margin $\epsilon$ of the best normalized score, ties are broken with task-specific heuristics such as prompted seed gene retention and tool-supported evidence, pushing the logged trajectory to favor well-grounded candidates over those that score highly by chance. We defer the formal score definitions to Section~\ref{sec:ch4-reward}.
+
+Model prompts carry a compact state rather than a growing transcript. Each prompt supplies the current working interpretation, the relationship status, the predicted groups, the mechanistic labels tied to the evidence handles that support them, the tool and evidence counters, and the current observation. Prior observations are not appended, so prompt length stays bounded as trajectories grow. The full evidence payloads are retained in the logged trajectory artifacts, where they remain available for scoring, audit, preference-pair mining, and expert review.
+
+We provide several query modes and evidence types to simulate the diversity of inputs that an agent might encounter in real-world use cases. During training, we sample queries from a set of task-specific templates that are paraphrased by an open-weight model to ensure linguistic diversity. We provide the agent with either minimal evidence, which includes only the input query and associated seed genes, or graph-supported evidence, which includes a relevant subgraph of the multiplex lattice that is related to the query. At inference time, the agent receives a natural-language query along with optional graph or seed evidence. During trajectory generation, the agent never sees the task type, the true relationship status, or the hidden target. Invalid tool calls during generation return an empty observation and count towards the efficiency penalty, which encourages the agent to learn concise and effective reasoning strategies. 
+
+We define a three-stage curriculum for the mechanistic agent, which gradually increases the complexity of tasks and length of trajectories. The first stage focuses on module tasks, where the agent learns to recover and refine modules from partial or noisy inputs. The second stage introduces connectivity tasks, where the agent must identify paths and bridge nodes between distant clades. The final stage focuses on projection tasks, where the agent must project neighborhoods onto the hierarchy and recover mechanistic evidence for the resulting connections, synthesizing the skills learned in the previous stages. Each stage builds on the previous one, ensuring that the agent develops a comprehensive understanding of the multiplex structure and the mechanistic relationships within it.
+
+\subsubsection{Reward Design}\label{sec:ch4-reward}
+We define all training-time scores over structured state transitions, deterministic runtime metadata, and hidden module-derived targets rather than textual reasoning. This design choice keeps scoring reproducible, machine-parseable, and scalable, while avoiding dependence on human judges or semantic evaluation of natural-language trajectories. We decompose all scores into four components: schema compliance, group membership, mechanistic quality, and efficiency. 
+
+Becuase DPO optimizes over preferred continuations at a single timepoint, we define local branch scoring as 
+
+\begin{equation}\label{eqn:local-reward}
+    s^{local}_{t,i,j} = w_s\, s^{schema} + w_c\, \Delta s^{module} + w_m\, \Delta s^{mech} - w_e\, p^{eff} - p^{mismatch}
+\end{equation}
+
+where $\Delta s^{mech}$ is the evidence-grounded mechanistic quality delta. Additionally, mechanistic quality is clamped to be non-positive when the candidate degrades the predicted group relative to the task type (e.g. by adding noise genes during recovery or removing true members during refinement), and $p^{mismatch}$ penalizes an \texttt{explanation} candidate that reduces recovery of an already-complete module.
+
+We use $\Delta s_{module}$ to measure the change in module membership accuracy from step $t$ to $t+1$. Because the runtime state may contain multiple predicted groups, we first score a state by the best-matched predicted group:
+
+\begin{equation}\label{eqn:module-state-score}
+    s^{module}(z; C, C_{\text{type}}) =
+    \max_{G \in \mathcal{G}(z)}
+    \left[
+        \alpha J(G, C) + \beta P(G, C) + \gamma R(G, C)
+    \right],
+\end{equation}
+
+where $\mathcal{G}(z)$ denotes the set of predicted groups in state $z$, with an empty group used when no prediction is present. We then define the local module improvement as
+
+\begin{equation}\label{eqn:module-score}
+        \Delta s^{module}_{t,i,j}
+    =
+    s^{module}(z_{t+1,i,j}; C, C_{\text{type}})
+    -
+    s^{module}(z_t; C, C_{\text{type}}).
+\end{equation}
+
+where $J$, $P$, and $R$ denote Jaccard, precision, and recall respectively, the weights $\alpha, \beta, \gamma$ are set per task type. Recovery upweights recall ($\alpha,\beta,\gamma = 0.2, 0.2, 0.6$) to reward found members, refinement upweights precision ($0.2, 0.6, 0.2$) to penalize retained noise, and explanation weights them equally ($\tfrac{1}{3}$ each). This best-group formulation supports the multiple-groups state representation while keeping the hidden target single-module for scoring.
+
+We score the mechanistic quality of a state as an evidence-grounded value in $[0,1]$, computed from the evidence the agent has actually retrieved. It combines grounding, meaning that the entities named in a claim appear in observed evidence, consensus between enrichment and annotation support, specificity, which penalizes generic claims, network support, stability across query subsets, and agreement across tools. A state that asserts a mechanism is scored on these components and heavily discounted when a claim is made without supporting evidence. A state that abstains is instead rewarded for withholding a claim under weak support, but this reward is forced to zero on any task other than \texttt{none}, so that abstention cannot be used to collect reward where a grounded group was recoverable. The per-step mechanistic reward is the change in this value between consecutive states, and is zero when no mechanistic claim has been made.
+
+$p_{eff}$ is a small penalty designed to discourage two behaviors: excessively long trajectories and invalid tool calling. Long trajectories are penalized via the term $t / T_{\max}$, while we count invalid tool calls (those that are schema-invalid, exact duplicates, or return empty observations) with $n_{inv}$, penalizing them proportionally to the total number of tool calls: $(n_{inv} / n_{total})$. We formalize this scoring term as
+\begin{equation}\label{eqn:eff-pen}
+    p^{eff}_{t,i,j} = \lambda_1 (t / T_{\max}) + \lambda_2(n_{inv} / n_{total}).
+\end{equation}
+
+For the \texttt{none} task type, where the hidden target is empty, the membership component is replaced by an abstention score
+\[
+    s^{none} = w_{rel}\, \mathbf{1}[rel = \texttt{insufficient\_support}] + w_{abs}\, \mathbf{1}[G = \varnothing],
+\]
+
+with $w_{rel} = 0.6$ and $w_{abs} = 0.4$. This rewards the agent both for declaring no shared mechanism and for refusing to emit a spurious group.
+
+\subsubsection{Terminal Reward Decomposition for GRPO}\label{sec:terminal-reward}
+Unlike DPO, which compares local same-prefix branches, policy gradient methods require a scalar reward for a completed rollout. We therefore define a terminal reward over the final structured state and trajectory log:
+
+\begin{equation}\label{eqn:terminal-reward}
+    R_T = w^T_s s^T_{schema} +w^T_{abs} s^{T}_{module} + w^T_{c} \Delta s^{T}_{module} + w^T_{mabs} s^T_{mech} + w^T_{m} \Delta s^{T}_{mech} - w^T_e p^{T}_{eff}. 
+\end{equation}
+
+While all terms included in local scoring appear in the terminal reward, they are modified to capture global behavior. Additionally, two new rewards are included to capture absolute recovery. Absolute terms appear in the terminal score but not the local score. Because local scoring is evaluated on examples that share the same starting state $S_t$, absolute levels cancel, and only relative metrics matter. Conversely, the terminal reward is evaluating complete trajectories, which may vary in starting difficulty and length, so absolute metrics capture global problem-solving ability.
+
+The terminal module score applies the same composite of Jaccard, precision, and recall to the final predicted group against the hidden target, and the cumulative module delta is its change from the group the agent was given at initialization. The terminal mechanistic terms mirror this, using the final evidence-grounded quality and its change over the trajectory, with both set to zero when no mechanistic claim has been made. The terminal schema score additionally requires that the termination mode, whether the agent stopped on its own or exhausted its budget, is recorded in the final state.
+
+% ===== LIFTED main.tex:546-549 -- terminal efficiency penalty + Eq 4. ====
+Finally, the terminal efficiency penalty aggregates trajectory length and invalid tool use across all steps:
+\begin{equation}\label{eqn:terminal-eff}
+    p^{T}_{eff} = \lambda_1 \left(\frac{T}{T_{\max}}\right) + \lambda_2 \left(\frac{\sum_{t=0}^{T-1} n^{t}_{inv}}{\sum_{t=0}^{T-1} n^{t}_{total}}\right).
+\end{equation}
+
+At each decision point $t$, we create DPO preference tuples of the form $(x_t, c_t^+, c_t^-)$ from our candidate set $\mathcal{C}_t = \{c_{t,i,j}\}$. We define $x_t = (q, e^{\text{user}}, I_t, S_t)$ as the shared-prefix context and $c_{t,i,j}$ as a sample interpretation continuation from Algorithm~\ref{alg:ch4-trajectory-gen}. Each continuation contains the model-generated reasoning step, tool action, verifier update, and continuation decision.
+
+Before constructing pairs, we normalize scores to ensure that the selection margin has a consistent meaning across task types and trajectory lengths. We apply min-max normalization within each candidate pool $\mathcal{C}_t$, rescaling the composite local scores to $[0, 1]$. We denote the normalized score of candidate $c_{t,i,j}$ as $\bar{s}^{\,\text{local}}_{t,i,j}$.
+
+To create paired examples, we set the preferred candidate $c_t^+$ to the branch selected as the trajectory continuation, $c_{t,i^\star, j^\star}$ (Section~\ref{sec:ch4-corpora}), rather than to a strict $\arg\max$ of the normalized score. Because selection resolves near-ties with task-specific heuristics within a tolerance $\epsilon$, the preferred branch is the one judged best for the task, not merely the highest-scoring candidate. We then define a selection margin $\tau$ and drop all candidates for which
+
+\[
+    \bar{s}^{\,\text{local}}_{t,i^\star,j^\star} - \bar{s}^{\,\text{local}}_{t,i,j} < \tau,
+\]
+
+where $(i^\star, j^\star)$ indexes the selected candidate. This prevents the construction of pairs that are near ties. The remaining candidates form the eligible dispreferred pool $\mathcal{C}_t^{-}$.
+
+From $\mathcal{C}_t^{-}$, we draw dispreferred examples across three difficulty bins, $d \in \{\texttt{easy}, \texttt{medium}, \texttt{hard}\}$. We construct $\texttt{easy}$ pairs by selecting the lowest-scoring candidate in $\mathcal{C}_t^{-}$, $\texttt{medium}$ pairs by selecting the candidate with the median score, and $\texttt{hard}$ pairs by selecting the highest-scoring candidate in $\mathcal{C}_t^{-}$.
+
+We store each preference pair $(x_t, c_t^+, c_t^-)$ along with its difficulty bin $d$, task type $C_{\text{type}}$, decision step $t$, raw and normalized scores, and the score margin in the preference corpus $\mathcal{P}$. After trajectory generation is complete, we rebalance $\mathcal{P}$ across task types and difficulty bins by downsampling overrepresented categories to ensure that the training distribution is not dominated by task types that produce disproportionately many informative pairs. The curriculum strategy described in Section~\ref{sec:ch4-training-pipeline} controls which difficulty bins are included at each training stage.
+
+
+\subsection{Training Pipeline and Curriculum}\label{sec:ch4-training-pipeline}
 
 \subsection{Evaluation}
 \subsubsection{World Model Gates, Flagships, and Probes}
