@@ -1,0 +1,77 @@
+\begin{tikzpicture}[mentor figure, x=1cm, y=1cm]
+  \node[mentor title] at (7.76,6.82) {Projection, return to network, and the applied case};
+
+  % Step 1: seed a neighborhood.
+  \node[mentor label, font=\sffamily\bfseries\scriptsize] at (1.78,5.86) {1\quad Seed neighborhood};
+  \node[mentor seed] (pseed) at (1.72,4.55) {};
+  \node[mentor member] (pn1) at (0.82,4.18) {};
+  \node[mentor member] (pn2) at (1.18,5.05) {};
+  \node[mentor member] (pn3) at (2.32,5.03) {};
+  \node[mentor member] (pn4) at (2.67,4.12) {};
+  \node[mentor gene] (pn5) at (1.15,3.52) {};
+  \node[mentor gene] (pn6) at (2.28,3.46) {};
+  \foreach \a/\b in {pseed/pn1,pseed/pn2,pseed/pn3,pseed/pn4,pn1/pn5,pn4/pn6,pn2/pn3}{
+    \draw[draw=mentorMuted,line width=.45pt] (\a)--(\b);
+  }
+  \draw[mentorGreenDark,dashed,rounded corners=8pt]
+    (0.55,3.88) rectangle (2.92,5.30);
+  \node[mentor green, font=\sffamily\scriptsize, minimum width=2.45cm,
+    text width=2.15cm] at (1.72,2.72) {RWR-LOE neighborhood};
+  \node[mentor frame, fit={(0.08,2.10) (3.36,6.12)}, inner sep=0pt] {};
+
+  \draw[mentor arrow] (3.42,4.18)--(4.02,4.18);
+
+  % Step 2: enrich against every level of hierarchy.
+  \node[mentor label, font=\sffamily\bfseries\scriptsize] at (5.58,5.86) {2\quad Project to hierarchy};
+  \foreach \x in {4.55,4.98,5.41,5.84,6.27,6.70}{\draw[mentorInk,line width=.55pt] (\x,3.25)--(\x,3.70);}
+  \draw[mentorInk,line width=.55pt] (4.55,3.70)--(4.55,4.10)--(4.98,4.10)--(4.98,3.70);
+  \draw[mentorInk,line width=.55pt] (5.41,3.70)--(5.41,4.38)--(5.84,4.38)--(5.84,3.70);
+  \draw[mentorInk,line width=.55pt] (6.27,3.70)--(6.27,4.05)--(6.70,4.05)--(6.70,3.70);
+  \draw[mentorInk,line width=.55pt] (4.76,4.10)--(4.76,4.82)--(5.62,4.82)--(5.62,4.38);
+  \draw[mentorInk,line width=.55pt] (5.19,4.82)--(5.19,5.25)--(6.48,5.25)--(6.48,4.05);
+  \draw[mentorGreenDark,line width=2.2pt] (4.43,3.08)--(5.08,3.08);
+  \draw[mentorPurpleDark,line width=2.2pt] (6.15,3.08)--(6.80,3.08);
+  \node[mentor tiny, text=mentorGreenDark] at (4.76,2.72)
+    {$E=2.8$};
+  \node[mentor tiny, text=mentorPurpleDark] at (6.48,2.72)
+    {$E=2.3$};
+  \node[mentor frame, fit={(4.04,2.10) (7.14,6.12)}, inner sep=0pt] {};
+
+  \draw[mentor arrow] (7.20,4.18)--(7.80,4.18);
+
+  % Step 3: return to network.
+  \node[mentor label, font=\sffamily\bfseries\scriptsize] at (9.86,5.86) {3\quad Return to network};
+  \node[mentor member] (ra1) at (8.50,4.78) {};
+  \node[mentor member] (ra2) at (8.42,3.82) {};
+  \node[mentor member] (ra3) at (9.15,4.30) {};
+  \draw[mentorGreenDark] (ra1)--(ra2)--(ra3)--(ra1);
+  \node[mentor bridge] (rbr) at (9.92,3.72) {};
+  \node[mentor purple, circle, minimum size=3.4mm, inner sep=0pt] (rb1) at (10.68,4.35) {};
+  \node[mentor purple, circle, minimum size=3.4mm, inner sep=0pt] (rb2) at (11.20,3.68) {};
+  \node[mentor purple, circle, minimum size=3.4mm, inner sep=0pt] (rb3) at (11.35,4.68) {};
+  \draw[mentorPurpleDark] (rb1)--(rb2)--(rb3)--(rb1);
+  \draw[mentorBlueDark,line width=1.25pt] (ra3)--(rbr);
+  \draw[mentorOrangeDark,line width=1.25pt] (rbr)--(rb1);
+  \node[mentor blue, font=\sffamily\scriptsize, minimum width=3.25cm,
+    text width=2.95cm] at (9.86,2.68)
+    {Bridges $+$ paths $+$ supporting layers};
+  \node[mentor frame, fit={(7.82,2.10) (11.88,6.12)}, inner sep=0pt] {};
+
+  \draw[mentor arrow] (11.94,4.18)--(12.52,4.18);
+
+  % Applied extension.
+  \node[mentor label, font=\sffamily\bfseries\scriptsize] at (14.08,5.86) {4\quad Applied filter};
+  \node[mentor rose, minimum width=2.35cm, minimum height=.68cm,
+    font=\sffamily\scriptsize] (signal) at (14.08,5.10)
+    {Drug or disease signal};
+  \node[mentor orange, minimum width=2.35cm, minimum height=.78cm,
+    text width=2.05cm, font=\sffamily\scriptsize] (direction) at (14.08,4.02)
+    {Directional filter\\opposes disease?};
+  \node[mentor purple, minimum width=2.35cm, minimum height=.68cm,
+    font=\sffamily\scriptsize] (translate) at (14.08,2.88)
+    {Translational rank};
+  \draw[mentor arrow] (signal.south)--(direction.north);
+  \draw[mentor arrow] (direction.south)--(translate.north);
+  \node[mentor frame, dashed, draw=mentorPurpleDark,
+    fit={(12.54,2.10) (15.62,6.12)}, inner sep=0pt] {};
+\end{tikzpicture}

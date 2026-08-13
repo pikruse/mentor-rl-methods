@@ -1,0 +1,83 @@
+\begin{tikzpicture}[mentor figure, x=1cm, y=1cm]
+  \node[mentor title] at (7.78,7.28) {Module task cases};
+  \node[mentor subtitle] at (7.78,6.93)
+    {hidden targets are scorer-only; the agent receives only the visible input};
+
+  % Panel headings.
+  \foreach \x/\letter/\title in {1.92/A/Recovery,5.82/B/Explanation,9.72/C/Refinement,13.62/D/No mechanism}{
+    \node[mentor title] at (\x,6.38) {\letter\quad \title};
+  }
+
+  % A: recovery.
+  \node[mentor tiny] at (1.92,5.87) {hidden target $C$};
+  \foreach \x in {1.25,1.70,2.15,2.60}{\node[mentor member] at (\x,5.50) {};}
+  \draw[mentorLine,dashed,rounded corners=3pt] (0.94,5.25) rectangle (2.91,5.75);
+  \node[mentor tiny] at (1.92,4.90) {visible input $C^{\mathrm{in}}$};
+  \node[mentor member] at (1.48,4.52) {};
+  \node[mentor member] at (1.92,4.52) {};
+  \node[mentor gene, dashed, draw=mentorLine] at (2.36,4.52) {};
+  \draw[mentor arrow] (1.92,4.18)--(1.92,3.56);
+  \node[mentor tiny] at (1.92,3.84) {recover};
+  \foreach \x in {1.25,1.70,2.15,2.60}{\node[mentor member] at (\x,3.20) {};}
+  \node[mentor green, minimum width=2.45cm] at (1.92,2.48) {complete module};
+
+  % B: explanation.
+  \node[mentor tiny] at (5.82,5.87) {hidden target $C$};
+  \foreach \x in {5.15,5.60,6.05,6.50}{\node[mentor member] at (\x,5.50) {};}
+  \draw[mentorLine,dashed,rounded corners=3pt] (4.84,5.25) rectangle (6.81,5.75);
+  \node[mentor tiny] at (5.82,4.90) {visible input $C^{\mathrm{in}}=C$};
+  \foreach \x in {5.15,5.60,6.05,6.50}{\node[mentor member] at (\x,4.52) {};}
+  \draw[mentor arrow] (5.82,4.18)--(5.82,3.56);
+  \node[mentor tiny] at (5.82,3.84) {explain, do not alter};
+  \node[mentor purple, minimum width=2.65cm] at (5.82,3.05) {mechanistic claim};
+  \node[mentor blue, minimum width=2.65cm] at (5.82,2.48) {evidence handles};
+
+  % C: refinement.
+  \node[mentor tiny] at (9.72,5.87) {hidden target $C$};
+  \foreach \x in {9.05,9.50,9.95,10.40}{\node[mentor member] at (\x,5.50) {};}
+  \draw[mentorLine,dashed,rounded corners=3pt] (8.74,5.25) rectangle (10.71,5.75);
+  \node[mentor tiny] at (9.72,4.90) {visible input $C^{\mathrm{in}}$};
+  \foreach \x in {8.72,9.16,9.60,10.04}{\node[mentor member] at (\x,4.52) {};}
+  \node[mentor noise] at (10.48,4.52) {};
+  \node[mentor noise] at (10.92,4.52) {};
+  \draw[mentor arrow] (9.72,4.18)--(9.72,3.56);
+  \node[mentor tiny] at (9.72,3.84) {remove distractors};
+  \foreach \x in {9.05,9.50,9.95,10.40}{\node[mentor member] at (\x,3.20) {};}
+  \node[mentor green, minimum width=2.45cm] at (9.72,2.48) {refined module};
+
+  % D: none / split.
+  \node[mentor tiny] at (13.62,5.87) {hidden target $C=\varnothing$};
+  \node[mentor ghost, minimum width=2.10cm] at (13.62,5.48) {empty};
+  \node[mentor tiny] at (13.62,4.90) {visible pseudo-module};
+  \node[mentor green, circle, minimum size=3.4mm, inner sep=0pt] at (12.75,4.52) {};
+  \node[mentor green, circle, minimum size=3.4mm, inner sep=0pt] at (13.18,4.52) {};
+  \node[mentor purple, circle, minimum size=3.4mm, inner sep=0pt] at (13.75,4.52) {};
+  \node[mentor purple, circle, minimum size=3.4mm, inner sep=0pt] at (14.18,4.52) {};
+  \node[mentor noise] at (14.62,4.52) {};
+  \draw[mentor arrow] (13.62,4.18)--(13.62,3.56);
+  \node[mentor tiny] at (13.62,3.84) {calibrate};
+  \node[mentor purple, minimum width=1.45cm] at (12.82,3.05) {split groups};
+  \node[mentor rose, minimum width=1.45cm] at (14.42,3.05) {abstain};
+  \node[mentor tiny] at (13.62,2.48) {never fabricate one module};
+
+  % Four panel frames.
+  \foreach \xl/\xr in {0.08/3.76,3.98/7.66,7.88/11.56,11.78/15.46}{
+    \node[mentor frame, fit={(\xl,2.06) (\xr,6.68)}, inner sep=0pt] {};
+  }
+
+  % Difficulty strip consolidates the distractor-gene comment.
+  \node[mentor title, anchor=west] at (0.22,1.63) {Corpus difficulty};
+  \node[mentor tiny, anchor=west] at (0.22,1.25)
+    {harder distractors lie closer to the target};
+  \draw[mentorInk, line width=.55pt] (5.10,1.49)--(14.98,1.49);
+  \node[mentor member] at (10.70,1.49) {};
+  \node[mentor noise] at (5.72,1.49) {};
+  \node[mentor noise] at (7.45,1.49) {};
+  \node[mentor noise] at (9.78,1.49) {};
+  \node[mentor tiny] at (5.72,1.05) {easy: far};
+  \node[mentor tiny] at (7.45,1.05) {medium};
+  \node[mentor tiny] at (9.78,1.05) {hard: near};
+  \node[mentor tiny, text width=3.8cm] at (13.15,1.15)
+    {dendrogram-distance bands or post-elbow rank bands};
+  \node[mentor frame, fit={(0.08,0.67) (15.46,1.92)}, inner sep=0pt] {};
+\end{tikzpicture}

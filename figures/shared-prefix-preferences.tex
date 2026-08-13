@@ -1,0 +1,50 @@
+\begin{tikzpicture}[mentor figure, x=1cm, y=1cm]
+  \node[mentor title, anchor=west] at (0.25,7.28) {A\quad Shared-prefix branch exploration};
+  \node[mentor gray, mentor box, minimum width=3.55cm, minimum height=.78cm] (prefix) at (5.50,6.42)
+    {Shared prefix $D_t=(q,e^{\mathrm{user}},I_t,S_t)$};
+
+  \node[mentor blue, minimum width=2.55cm] (a1) at (1.85,5.08) {Candidate action $a_{t,1}$};
+  \node[mentor blue, minimum width=2.55cm] (a2) at (5.50,5.08) {Candidate action $a_{t,2}$};
+  \node[mentor blue, minimum width=2.55cm] (a3) at (9.15,5.08) {Candidate action $a_{t,3}$};
+  \draw[mentor soft arrow] (prefix)--(a1);
+  \draw[mentor soft arrow] (prefix)--(a2);
+  \draw[mentor soft arrow] (prefix)--(a3);
+
+  \node[mentor rose, minimum width=1.58cm, minimum height=.72cm,
+    mentor rejected] (v11) at (0.95,3.55) {Verify $1$};
+  \node[mentor box, minimum width=1.58cm, minimum height=.72cm] (v12) at (2.75,3.55) {Verify $2$};
+  \node[mentor box, minimum width=1.58cm, minimum height=.72cm] (v21) at (4.60,3.55) {Verify $1$};
+  \node[mentor green, minimum width=1.58cm, minimum height=.72cm, mentor selected] (v22) at (6.40,3.55) {Verify $2$};
+  \node[mentor box, minimum width=1.58cm, minimum height=.72cm] (v31) at (8.25,3.55) {Verify $1$};
+  \node[mentor box, minimum width=1.58cm, minimum height=.72cm] (v32) at (10.05,3.55) {Verify $2$};
+  \foreach \a/\b in {a1/v11,a1/v12,a2/v21,a2/v22,a3/v31,a3/v32}{\draw[mentor soft arrow] (\a)--(\b);}
+
+  \node[mentor badge, fill=mentorRoseDark] at (0.95,2.94) {$s=.29$};
+  \node[mentor badge] at (2.75,2.94) {$s=.48$};
+  \node[mentor badge] at (4.60,2.94) {$s=.81$};
+  \node[mentor badge, fill=mentorGreenDark] at (6.40,2.94) {$s=.86$};
+  \node[mentor badge] at (8.25,2.94) {$s=.63$};
+  \node[mentor badge] at (10.05,2.94) {$s=.55$};
+
+  \node[mentor green, minimum width=2.95cm] (continue) at (6.40,2.12)
+    {selected continuation $c_t^+$};
+  \draw[mentor arrow, draw=mentorGreenDark] (v22)--(continue);
+  \node[mentor frame, fit={(0.05,1.02) (10.92,7.62)}, inner sep=0pt] {};
+
+  % Preference construction panel.
+  \node[mentor title, anchor=west] at (11.36,7.28) {B\quad DPO tuple};
+  \node[mentor gray, mentor box, minimum width=3.25cm] (x) at (13.45,6.28)
+    {$x$: the same shared prefix};
+  \node[mentor rose, minimum width=1.75cm, minimum height=1.05cm,
+    text width=1.48cm, font=\sffamily\scriptsize, mentor rejected] (ym) at (12.35,4.45)
+    {$y^-$\\Verify 1\\dispreferred};
+  \node[mentor green, minimum width=1.75cm, minimum height=1.05cm,
+    text width=1.48cm, font=\sffamily\scriptsize, mentor selected] (yp) at (14.55,4.45)
+    {$y^+$\\Verify 2\\preferred};
+  \draw[mentor arrow] (x.south) to[out=-115,in=90] (ym.north);
+  \draw[mentor arrow] (x.south) to[out=-65,in=90] (yp.north);
+  \node[mentor purple, minimum width=3.55cm, minimum height=.78cm,
+    font=\sffamily\scriptsize] at (13.45,2.68)
+    {$\max_{\theta}\;P_{\theta}(y^+ \succ y^-\mid x)$};
+  \node[mentor frame, fit={(11.16,1.02) (15.72,7.62)}, inner sep=0pt] {};
+\end{tikzpicture}

@@ -1,0 +1,53 @@
+\begin{tikzpicture}[mentor figure, x=1cm, y=1cm]
+  \path[use as bounding box] (0.05,0.78) rectangle (17.25,6.78);
+  \node[mentor title] at (8.65,6.48) {One decision step of the MENTOR-RL agent};
+
+  \begin{scope}[yshift=-1.8mm]
+  \node[mentor rose, minimum width=2.05cm, minimum height=1.05cm, text width=1.75cm] (input) at (1.25,4.30)
+    {Query $q$,\\User evidence $e^{\mathrm{user}}$};
+  \node[mentor purple, minimum width=1.75cm, minimum height=1.05cm, text width=1.45cm] (actor) at (3.65,4.30)
+    {Actor mode\\$\pi_\theta^{\mathrm{act}}$};
+  \node[mentor gray, minimum width=2.00cm, minimum height=1.05cm, text width=1.70cm] (action) at (5.95,4.30)
+    {Reasoning $r_t$,\\Action $a_t$};
+  \node[mentor blue, minimum width=2.10cm, minimum height=.90cm, text width=1.82cm,
+    font=\sffamily\scriptsize] (runtime) at (5.95,2.72)
+    {Deterministic\\runtime $\varepsilon$};
+  \node[mentor purple, minimum width=1.85cm, minimum height=1.05cm, text width=1.55cm] (verify) at (8.42,4.30)
+    {Verifier mode\\$\pi_\theta^{\mathrm{verify}}$};
+
+  \draw[mentor arrow] (input) -- node[mentor tiny, above] {$D_t$} (actor);
+  \draw[mentor arrow] (actor) -- (action);
+  \draw[mentor arrow] (action) -- (verify);
+  \draw[mentor arrow] (action.south) -- node[mentor tiny, right] {valid call} (runtime.north);
+  \draw[mentor arrow] (runtime.east) -| node[mentor tiny, near start, below] {$o_t$} (verify.south);
+
+  \draw[mentorPurpleDark, line width=.7pt]
+    (2.90,5.08) -- (2.90,5.36) -- (9.18,5.36) -- (9.18,5.08);
+  \node[mentor tiny, text=mentorPurpleDark, fill=white, inner sep=2pt] at (6.04,5.36)
+    {shared weights};
+
+  % Paired human- and machine-readable views.
+  \node[mentor green, minimum width=2.35cm, minimum height=3.45cm,
+    text width=1.97cm] (interp) at (11.45,4.30)
+    {\textbf{Working interpretation}\\[3pt]
+     claim,\\support + uncertainty,\\next subgoal\\[3pt]$I_{t+1}$};
+  \node[mentor orange, minimum width=2.35cm, minimum height=3.45cm,
+    text width=1.97cm] (state) at (14.15,4.30)
+    {\textbf{Structured state}\\[3pt]
+     relationship + groups,\\evidence + provenance,\\labels + counters\\[3pt]$S_{t+1}$};
+  \node[mentor frame, dashed, draw=mentorLine, fit=(interp)(state), inner sep=6pt] (paired) {};
+  \draw[mentor arrow] (verify.east) -- (interp.west);
+
+  \node[mentor box, font=\sffamily\scriptsize, minimum width=2.70cm] (decision) at (12.80,1.48)
+    {$z_t$: continue, \enspace revise, \enspace stop};
+  \draw[mentor arrow] (paired.south) -- (decision.north);
+  \node[mentor box, fill=white, font=\sffamily\scriptsize,
+    minimum width=1.62cm, minimum height=.58cm] (final) at (16.18,1.48)
+    {Final $(I_T,S_T)$};
+  \draw[mentor soft arrow] (decision.east) -- (final.west);
+  \draw[mentor dashed arrow] (decision.west) -- (3.65,1.48) -- (3.65,3.75);
+  \node[mentor tiny] at (5.05,1.29)
+    {continue / revise};
+  \end{scope}
+
+\end{tikzpicture}

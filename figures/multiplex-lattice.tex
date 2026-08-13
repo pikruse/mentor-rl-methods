@@ -1,0 +1,54 @@
+\begin{tikzpicture}[mentor figure, x=1cm, y=1cm]
+  % Context lattice: a partial order rather than a strict tree.
+  \node[mentor title, anchor=west] at (0.25,6.72) {A\quad Context lattice};
+
+  \node[mentor purple, minimum width=2.35cm] (brain) at (3.65,5.75) {Whole brain};
+  \node[mentor blue, minimum width=2.25cm] (hip) at (2.25,4.22) {Region A};
+  \node[mentor blue, minimum width=2.25cm] (pfc) at (5.05,4.22) {Region B};
+  \node[mentor green, minimum width=2.45cm, minimum height=.72cm, text width=2.08cm]
+    (ca1) at (1.48,2.70) {Tissue 1};
+  \node[mentor green, minimum width=2.45cm, minimum height=.72cm, text width=2.08cm]
+    (astrohip) at (4.52,2.70) {Cell type X\\across Region A};
+  \node[mentor orange, font=\sffamily\scriptsize, text width=1.65cm] (exc) at (1.18,1.05) {Cell type Y\\in Tissue 1};
+  \node[mentor orange, font=\sffamily\scriptsize, text width=1.65cm] (astro) at (3.28,1.05) {Cell type X\\in Tissue 1};
+  \node[mentor orange, font=\sffamily\scriptsize, text width=1.65cm] (inh) at (5.38,1.05) {Cell type Z\\in Tissue 1};
+
+  \begin{scope}[on background layer]
+    \draw[mentor soft arrow] (hip) -- (brain);
+    \draw[mentor soft arrow] (pfc) -- (brain);
+    \draw[mentor soft arrow] (ca1) -- (hip);
+    \draw[mentor soft arrow] (astrohip) -- (hip);
+    \draw[mentor soft arrow] (exc) -- (ca1);
+    \draw[mentor soft arrow] (astro) -- (ca1);
+    \draw[mentor soft arrow] (astro) -- (astrohip);
+    \draw[mentor soft arrow] (inh) -- (ca1);
+  \end{scope}
+  \node[mentor frame, fit={(0,0.05) (6.55,7.00)}, inner sep=0pt] {};
+
+  % Construction rule shared by every lattice point.
+  \node[mentor title, anchor=west] at (6.95,6.72) {B\quad Construction at one lattice coordinate};
+  \node[mentor subtitle, anchor=west, text width=8.0cm] at (6.95,6.18)
+    {the same rule is repeated independently at every coordinate};
+
+  \node[mentor orange, minimum width=2.15cm, minimum height=0.85cm] (pens) at (7.95,5.22)
+    {Active PEN\\layers for $c$};
+  \node[mentor green, minimum width=2.20cm, minimum height=0.85cm] (universe) at (10.88,5.22)
+    {Define gene\\universe $U_c$};
+  \node[mentor blue, minimum width=2.35cm, minimum height=0.85cm] (induce) at (13.86,5.22)
+    {Re-induce non-PEN\\layers on $U_c$};
+  \draw[mentor arrow] (pens) -- (universe);
+  \draw[mentor arrow] (universe) -- (induce);
+
+  \node[mentor label] at (11.12,4.40) {Stack active PEN and re-induced layers};
+  % Layer-stack glyph. Draw back-to-front so the top layer is foremost.
+  \foreach \yy/\cc in {2.94/mentorOrange,3.16/mentorGreen,3.38/mentorBlue,3.60/mentorPurple}{
+    \draw[draw=mentorInk, fill=\cc, rounded corners=1pt]
+      (9.10,\yy) -- (12.60,\yy) -- (13.10,\yy+0.26) -- (9.60,\yy+0.26) -- cycle;
+  }
+  \draw[mentor arrow] (pens.south) -- (7.95,3.47) -- (9.10,3.47);
+  \draw[mentor arrow] (induce.south) -- (13.86,3.47) -- (13.10,3.47);
+  \node[mentor purple, minimum width=3.55cm, minimum height=0.72cm] (mc) at (11.12,1.03)
+    {Multiplex $M_c$};
+  \draw[mentor arrow] (11.12,2.94) -- (mc.north);
+  \node[mentor frame, fit={(6.70,0.05) (15.55,7.00)}, inner sep=0pt] {};
+\end{tikzpicture}

@@ -1,0 +1,93 @@
+% Shared visual language for MENTOR-RL TikZ figures.
+% The muted chapter palette and rounded panels mirror the architecture figures
+% used elsewhere in the dissertation proposal. Keep semantic color assignments
+% stable so figures can be moved between the methods proposal and Chapter 4.
+\definecolor{mentorInk}{HTML}{2F3237}
+\definecolor{mentorMuted}{HTML}{646B73}
+\definecolor{mentorLine}{HTML}{CBD0D5}
+\definecolor{mentorGray}{HTML}{F3F4F5}
+\definecolor{mentorBlue}{HTML}{DCE8F5}
+\definecolor{mentorBlueDark}{HTML}{668FBD}
+\definecolor{mentorGreen}{HTML}{DDECD7}
+\definecolor{mentorGreenDark}{HTML}{78A968}
+\definecolor{mentorOrange}{HTML}{FBE8C8}
+\definecolor{mentorOrangeDark}{HTML}{DD9822}
+\definecolor{mentorPurple}{HTML}{E7DDF0}
+\definecolor{mentorPurpleDark}{HTML}{9B76B4}
+\definecolor{mentorRose}{HTML}{EED9E2}
+\definecolor{mentorRoseDark}{HTML}{B77D96}
+\definecolor{mentorRed}{HTML}{C65D55}
+
+% Use an absolute type scale so a figure has identical geometry in the
+% 10pt standalone exporter and the 12pt thesis class. Relative LaTeX size
+% commands otherwise expand inside the proposal and can overrun fixed TikZ
+% boxes even though the standalone PDF is clean.
+\newcommand{\mentorSmallSize}{\fontsize{9}{11}\selectfont}
+\newcommand{\mentorFootnoteSize}{\fontsize{8}{9.5}\selectfont}
+\newcommand{\mentorScriptSize}{\fontsize{7}{8}\selectfont}
+\newcommand{\mentorTinySize}{\fontsize{5}{6}\selectfont}
+
+\tikzset{
+  mentor figure/.style={
+    execute at begin picture={
+      \let\small\mentorSmallSize
+      \let\footnotesize\mentorFootnoteSize
+      \let\scriptsize\mentorScriptSize
+      \let\tiny\mentorTinySize
+    },
+    font=\sffamily\footnotesize,
+    text=mentorInk
+  },
+  mentor panel/.style={
+    draw=mentorInk,
+    line width=0.65pt,
+    rounded corners=3pt,
+    fill=white,
+    inner sep=6pt
+  },
+  mentor frame/.style={
+    draw=mentorInk,
+    line width=0.65pt,
+    rounded corners=3pt,
+    fill=none,
+    inner sep=6pt
+  },
+  mentor box/.style={
+    draw=mentorInk,
+    line width=0.55pt,
+    rounded corners=2.5pt,
+    fill=mentorGray,
+    align=center,
+    inner xsep=5pt,
+    inner ysep=4pt
+  },
+  mentor gray/.style={mentor box, fill=mentorGray, draw=mentorLine},
+  mentor blue/.style={mentor box, fill=mentorBlue, draw=mentorBlueDark},
+  mentor green/.style={mentor box, fill=mentorGreen, draw=mentorGreenDark},
+  mentor orange/.style={mentor box, fill=mentorOrange, draw=mentorOrangeDark},
+  mentor purple/.style={mentor box, fill=mentorPurple, draw=mentorPurpleDark},
+  mentor rose/.style={mentor box, fill=mentorRose, draw=mentorRoseDark},
+  mentor ghost/.style={mentor box, fill=white, draw=mentorLine, dashed},
+  mentor title/.style={font=\sffamily\bfseries\small, text=mentorInk},
+  mentor subtitle/.style={font=\sffamily\scriptsize, text=mentorMuted, align=center},
+  mentor label/.style={font=\sffamily\scriptsize, text=mentorInk, align=center},
+  mentor tiny/.style={font=\sffamily\tiny, text=mentorMuted, align=center},
+  mentor arrow/.style={-{Latex[length=2.2mm,width=1.5mm]}, draw=mentorInk, line width=0.65pt},
+  mentor soft arrow/.style={-{Latex[length=2mm,width=1.35mm]}, draw=mentorMuted, line width=0.55pt},
+  mentor dashed arrow/.style={mentor soft arrow, dashed},
+  mentor selected/.style={draw=mentorGreenDark, line width=1.25pt},
+  mentor rejected/.style={draw=mentorRoseDark, line width=1.05pt},
+  mentor gene/.style={circle, draw=mentorInk, line width=0.5pt, fill=white, minimum size=3.4mm, inner sep=0pt},
+  mentor member/.style={mentor gene, fill=mentorGreen, draw=mentorGreenDark},
+  mentor seed/.style={mentor gene, fill=mentorOrange, draw=mentorOrangeDark, line width=0.8pt},
+  mentor noise/.style={mentor gene, fill=mentorRose, draw=mentorRed},
+  mentor bridge/.style={diamond, draw=mentorPurpleDark, fill=mentorPurple, minimum size=4mm, inner sep=0pt},
+  mentor badge/.style={
+    rounded corners=2pt,
+    fill=mentorInk,
+    text=white,
+    font=\sffamily\bfseries\tiny,
+    inner xsep=3pt,
+    inner ysep=1.5pt
+  }
+}

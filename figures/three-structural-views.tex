@@ -1,0 +1,123 @@
+\begin{tikzpicture}[mentor figure, x=1cm, y=1cm]
+  \node[mentor title] at (7.90,7.62) {Three complementary views of the same multiplex};
+  \node[mentor label] at (7.90,7.16) {Context multiplex $M_c$};
+
+  % Shared multiplex glyph. Draw back-to-front so the top layer is foremost.
+  \foreach \yy/\cc in {6.14/mentorOrange,6.31/mentorGreen,6.48/mentorBlue,6.65/mentorPurple}{
+    \draw[draw=mentorInk, fill=\cc, rounded corners=1pt]
+      (7.18,\yy) -- (8.45,\yy) -- (8.82,\yy+0.20) -- (7.55,\yy+0.20) -- cycle;
+  }
+
+  \draw[mentor arrow] (7.32,6.13) to[out=235,in=90] (2.15,5.58);
+  \draw[mentor arrow] (7.90,6.10) -- (7.90,5.58);
+  \draw[mentor arrow] (8.46,6.13) to[out=305,in=90] (13.72,5.58);
+
+  % ------------------------------------------------------------------
+  % A: RWR-LOE diffusion with explicit walk and restart semantics.
+  \node[mentor title, anchor=west] at (0.25,5.28) {A\enspace Bottom-up: RWR-LOE};
+
+  \node[mentor seed] (seed) at (1.95,3.45) {};
+  \node[mentor member, fill=mentorGreenDark!70!white] (a1) at (1.05,4.25) {};
+  \node[mentor member, fill=mentorGreenDark!48!white] (a2) at (2.05,4.48) {};
+  \node[mentor member, fill=mentorGreenDark!30!white] (a3) at (3.02,4.05) {};
+  \node[mentor member, fill=mentorGreenDark!48!white] (a4) at (0.82,3.05) {};
+  \node[mentor member, fill=mentorGreenDark!28!white] (a5) at (3.12,2.95) {};
+  \node[mentor gene] (a6) at (1.68,2.25) {};
+
+  \foreach \u/\v in {seed/a1,seed/a2,seed/a4,seed/a5,a1/a2,a2/a3,a3/a5,a4/a6,a6/a5}{
+    \draw[draw=mentorMuted, line width=.48pt] (\u)--(\v);
+  }
+  \draw[mentor arrow, draw=mentorGreenDark] (seed) -- (a1);
+  \draw[mentor arrow, draw=mentorGreenDark] (a1) -- (a2);
+  \draw[mentor arrow, draw=mentorGreenDark] (a2) -- (a3);
+  \draw[mentor dashed arrow, draw=mentorRoseDark]
+    (a3) to[out=-115,in=32]
+      node[pos=.46, mentor tiny, text=mentorRoseDark, below, sloped] {restart $\alpha$}
+      (seed);
+  \node[mentor tiny, text=mentorGreenDark, anchor=west] at (0.55,4.78)
+    {random walk $1-\alpha$};
+
+  \node[mentor seed] at (0.67,1.47) {};
+  \node[mentor tiny, anchor=west] at (0.89,1.47) {RWR seed};
+  \node[mentor tiny] at (2.95,1.80) {visit probability};
+  \node[mentor member, fill=mentorGreenDark!68!white] at (2.48,1.47) {};
+  \node[mentor member, fill=mentorGreenDark!45!white] at (2.95,1.47) {};
+  \node[mentor member, fill=mentorGreenDark!22!white] at (3.42,1.47) {};
+  \node[mentor tiny] at (2.48,1.20) {high};
+  \node[mentor tiny] at (3.42,1.20) {low};
+  \node[mentor frame, fit={(0.05,0.98) (4.18,5.55)}, inner sep=0pt] {};
+
+  % ------------------------------------------------------------------
+  % B: complete MENTOR-EV pipeline and cut-defined modules.
+  \node[mentor title, anchor=west] at (4.53,5.28) {B\quad Top-down: MENTOR-EV};
+
+  \node[mentor purple, font=\sffamily\scriptsize, minimum width=1.20cm,
+        text width=1.05cm, inner xsep=1pt, minimum height=.70cm] (rwr) at (5.25,4.42)
+    {RWR for\\every seed};
+  \node[mentor purple, font=\sffamily\scriptsize, minimum width=1.30cm,
+        text width=1.15cm, inner xsep=1pt, minimum height=.70cm] (rho) at (6.82,4.42)
+    {Pairwise\\Spearman $\rho$};
+  \node[mentor purple, font=\sffamily\scriptsize, minimum width=1.45cm,
+        text width=1.25cm, inner xsep=1pt, minimum height=.70cm] (dmat) at (8.52,4.42)
+    {Dissimilarity\\$D=1-\rho$};
+  \node[mentor purple, font=\sffamily\scriptsize, minimum width=1.45cm,
+        text width=1.25cm, inner xsep=1pt, minimum height=.70cm] (cluster) at (10.29,4.42)
+    {Hierarchical\\clustering};
+  \draw[mentor arrow] (rwr.east)--(rho.west);
+  \draw[mentor arrow] (rho.east)--(dmat.west);
+  \draw[mentor arrow] (dmat.east)--(cluster.west);
+
+  % Module regions are rendered behind the dendrogram.
+  \begin{scope}[on background layer]
+    \draw[draw=mentorGreenDark, fill=mentorGreen, fill opacity=.50, rounded corners=2pt]
+      (4.94,1.38) rectangle (6.26,2.70);
+    \draw[draw=mentorBlueDark, fill=mentorBlue, fill opacity=.50, rounded corners=2pt]
+      (6.92,1.38) rectangle (8.24,2.70);
+    \draw[draw=mentorPurpleDark, fill=mentorPurple, fill opacity=.50, rounded corners=2pt]
+      (8.90,1.38) rectangle (10.22,2.70);
+  \end{scope}
+
+  % Six-leaf dendrogram whose three pairwise clades are modules at the cut.
+  \foreach \x in {5.20,5.78,7.18,7.76,9.16,9.74}{
+    \draw[mentorInk, line width=.60pt] (\x,1.62)--(\x,2.10);
+  }
+  \draw[mentorInk, line width=.60pt] (5.20,2.10)--(5.20,2.38)--(5.78,2.38)--(5.78,2.10);
+  \draw[mentorInk, line width=.60pt] (7.18,2.10)--(7.18,2.56)--(7.76,2.56)--(7.76,2.10);
+  \draw[mentorInk, line width=.60pt] (9.16,2.10)--(9.16,2.31)--(9.74,2.31)--(9.74,2.10);
+  \draw[mentorInk, line width=.60pt] (5.49,2.38)--(5.49,3.02)--(7.47,3.02)--(7.47,2.56);
+  \draw[mentorInk, line width=.60pt] (6.48,3.02)--(6.48,3.52)--(9.45,3.52)--(9.45,2.31);
+  \draw[mentorInk, line width=.60pt] (7.97,3.52)--(7.97,3.60);
+  \draw[mentorPurpleDark, dashed, line width=.78pt] (4.78,2.78)--(10.42,2.78);
+  \node[mentor tiny, text=mentorPurpleDark, anchor=east] at (10.40,2.96) {cut height};
+
+  \node[mentor tiny, text=mentorGreenDark] at (5.60,1.18) {module A};
+  \node[mentor tiny, text=mentorBlueDark] at (7.58,1.18) {module B};
+  \node[mentor tiny, text=mentorPurpleDark] at (9.56,1.18) {module C};
+  \draw[mentor arrow, rounded corners=3pt]
+    (cluster.south) -- (10.29,3.80) -- (7.97,3.80) -- (7.97,3.60);
+  \node[mentor frame, fit={(4.33,0.98) (11.45,5.55)}, inner sep=0pt] {};
+
+  % ------------------------------------------------------------------
+  % C: cross-module connectivity suppressed by the hierarchy.
+  \node[mentor title, anchor=west] at (11.88,5.28) {C\quad Connectivity};
+  \node[mentor label, text=mentorGreenDark] at (12.62,4.55) {module X};
+  \node[mentor label, text=mentorPurpleDark] at (14.85,4.55) {module Y};
+
+  \node[mentor member] (c1) at (12.17,3.82) {};
+  \node[mentor member] (c2) at (12.38,3.08) {};
+  \node[mentor member] (c3) at (12.93,3.68) {};
+  \draw[mentorGreenDark, line width=.65pt] (c1)--(c2)--(c3)--(c1);
+
+  \node[mentor purple, circle, minimum size=3.4mm, inner sep=0pt] (d1) at (14.45,3.70) {};
+  \node[mentor purple, circle, minimum size=3.4mm, inner sep=0pt] (d2) at (14.88,3.02) {};
+  \node[mentor purple, circle, minimum size=3.4mm, inner sep=0pt] (d3) at (15.30,3.78) {};
+  \draw[mentorPurpleDark, line width=.65pt] (d1)--(d2)--(d3)--(d1);
+
+  \node[mentor bridge] (bridge) at (13.72,3.16) {};
+  \draw[mentorBlueDark, line width=1.25pt] (c3)--(bridge);
+  \draw[mentorOrangeDark, line width=1.25pt] (bridge)--(d1);
+  \node[mentor tiny] at (13.72,2.34) {layer-supported short path};
+  \node[mentor rose, font=\sffamily\tiny, minimum width=3.45cm] at (13.72,1.43)
+    {tree distance $\ne$ network disconnection};
+  \node[mentor frame, fit={(11.67,0.98) (15.82,5.55)}, inner sep=0pt] {};
+\end{tikzpicture}
