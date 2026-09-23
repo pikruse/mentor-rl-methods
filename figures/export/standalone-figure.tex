@@ -1,8 +1,20 @@
 \documentclass[tikz,border=4pt]{standalone}
-\usepackage[T1]{fontenc}
+
+\usepackage{fontspec}
+\defaultfontfeatures{Ligatures=TeX}
+\setmainfont{Avenir Next}
+\setsansfont{Avenir Next}
+
 \usepackage{amsmath}
 \usepackage{amssymb}
-\usetikzlibrary{arrows.meta,backgrounds,calc,fit,positioning,shapes.geometric}
+\usetikzlibrary{
+    arrows.meta,
+    backgrounds,
+    calc,
+    fit,
+    positioning,
+    shapes.geometric
+}
 \input{../mentor-rl-style}
 
 \begin{document}
